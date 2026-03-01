@@ -5,10 +5,11 @@ package e2e
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/ddevcap/jellyfin-proxy/idtrans"
 )
 
 var _ = Describe("Favorites & Played state", func() {
@@ -143,9 +144,9 @@ var _ = Describe("Favorites & Played state", func() {
 	Describe("ID translation round-trip", func() {
 		It("favorite/played endpoints correctly decode proxy-prefixed IDs", func() {
 			movieID := getFirstMovieID()
-			prefix := strings.SplitN(movieID, "_", 2)[0]
-			Expect(prefix).To(SatisfyAny(Equal("s1"), Equal("s2")),
-				"movie ID should have a known server prefix")
+			// Proxy IDs are 32-char dashless UUIDs (UUID v5).
+			Expect(movieID).To(MatchRegexp(`^[0-9a-f]{32}$`),
+				"movie ID should be a 32-char hex proxy UUID")
 
 			// Mark + unmark should both succeed — proves the proxy decoded the ID correctly.
 			resp := post(proxyURL(fmt.Sprintf("/users/%s/favoriteitems/%s", testUser.ID, movieID)),
@@ -160,4 +161,3 @@ var _ = Describe("Favorites & Played state", func() {
 		})
 	})
 })
-

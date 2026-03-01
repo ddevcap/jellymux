@@ -52,7 +52,7 @@ var _ = Describe("Authentication", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			body := parseJSONObject(resp)
-			Expect(body["Id"]).To(Equal("e2e-proxy-server-id"))
+			Expect(body["Id"]).To(Equal("e2eproxyserverid"))
 			Expect(body["ServerName"]).To(Equal("E2E Proxy"))
 		})
 
@@ -94,4 +94,3 @@ var _ = Describe("Authentication", func() {
 		})
 	})
 })
-

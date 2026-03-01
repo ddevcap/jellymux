@@ -7,6 +7,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/ddevcap/jellyfin-proxy/idtrans"
 )
 
 var _ = Describe("Error handling & edge cases", func() {
@@ -64,7 +66,7 @@ var _ = Describe("Error handling & edge cases", func() {
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			body := parseJSONObject(resp)
-			Expect(body["Id"]).To(Equal("e2e-proxy-server-id"))
+			Expect(body["Id"]).To(Equal("e2eproxyserverid"))
 			Expect(body["ServerName"]).To(Equal("E2E Proxy"))
 			Expect(body).To(HaveKey("Version"))
 		})

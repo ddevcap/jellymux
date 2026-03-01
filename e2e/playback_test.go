@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
@@ -40,9 +39,9 @@ var _ = Describe("Playback", func() {
 
 			source := sources[0].(map[string]interface{})
 			sourceID := source["Id"].(string)
-			// The Id should be proxy-prefixed (same prefix as the movie).
-			prefix := strings.SplitN(movieID, "_", 2)[0]
-			Expect(sourceID).To(HavePrefix(prefix + "_"))
+			// The Id should be a 32-char dashless UUID (proxy-rewritten).
+			Expect(sourceID).To(MatchRegexp(`^[0-9a-f]{32}$`),
+				"MediaSource Id should be a 32-char hex proxy UUID")
 		})
 	})
 
