@@ -9,7 +9,6 @@ import (
 	"github.com/ddevcap/jellyfin-proxy/backend"
 	"github.com/ddevcap/jellyfin-proxy/config"
 	"github.com/ddevcap/jellyfin-proxy/ent"
-	"github.com/ddevcap/jellyfin-proxy/static"
 	"github.com/gin-gonic/gin"
 )
 
@@ -80,14 +79,14 @@ func (h *SystemHandler) GetRepositories(c *gin.Context) {
 func (h *SystemHandler) BrandingConfiguration(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"LoginDisclaimer":     "",
-		"CustomCss":           static.BrandingCSS,
+		"CustomCss":           "",
 		"SplashscreenEnabled": false,
 	})
 }
 
-// BrandingCss serves custom CSS that hides unsupported UI sections.
+// BrandingCss serves custom CSS.
 func (h *SystemHandler) BrandingCss(c *gin.Context) {
-	c.Data(http.StatusOK, "text/css; charset=utf-8", []byte(static.BrandingCSS))
+	c.Data(http.StatusOK, "text/css; charset=utf-8", []byte(""))
 }
 
 // UsersPublic handles GET /Users/Public.
