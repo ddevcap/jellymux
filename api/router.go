@@ -255,7 +255,6 @@ func registerRoutes(
 
 		// Playlists
 		priv.GET("/playlists", mediaH.GetPlaylists)
-		priv.POST("/playlists", mediaH.CreatePlaylist)
 		priv.GET("/playlists/:itemId/items", mediaH.GetPlaylistItems)
 
 		// Collections

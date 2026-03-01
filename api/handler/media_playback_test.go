@@ -42,12 +42,11 @@ const (
 )
 
 // playbackRouter builds a router that mirrors the real route layout.
-func playbackRouter(directStream bool) (*gin.Engine, string) {
+func playbackRouter() (*gin.Engine, string) {
 	cfg := config.Config{
-		ServerID:     "test-server-id",
-		ServerName:   "Test Proxy",
-		DirectStream: directStream,
-		ExternalURL:  "http://proxy:8096",
+		ServerID:    "test-server-id",
+		ServerName:  "Test Proxy",
+		ExternalURL: "http://proxy:8096",
 	}
 	pool := backend.NewPool(db, cfg)
 	mediaH := handler.NewMediaHandler(pool, cfg, db)
@@ -83,6 +82,29 @@ func setupPlaybackDB(backendURL string) {
 	createSession(u, pbProxyToken)
 }
 
+// setupPlaybackDBDirectStream is like setupPlaybackDB but creates a user with
+// direct_stream enabled — streaming requests for this user should 302-redirect.
+func setupPlaybackDBDirectStream(backendURL string) {
+	b, err := db.Backend.Create().
+		SetName("Playback Test Backend").
+		SetURL(backendURL).
+		SetJellyfinServerID("srv-playback").
+		SetPrefix(pbPrefix).
+		Save(mediaCtx())
+	Expect(err).NotTo(HaveOccurred())
+
+	u, err := db.User.Create().
+		SetUsername("pbuser").
+		SetDisplayName("pbuser").
+		SetHashedPassword("$2a$04$dummy").
+		SetDirectStream(true).
+		Save(mediaCtx())
+	Expect(err).NotTo(HaveOccurred())
+
+	createBackendUser(b, u, pbBackendUserID, pbBackendToken)
+	createSession(u, pbProxyToken)
+}
+
 // ═════════════════════════════════════════════════════════════════════════════
 // PLAYBACK FLOW
 //
@@ -90,9 +112,9 @@ func setupPlaybackDB(backendURL string) {
 //   Phase 2: HLS playlists    (browser ──ApiKey=proxyToken──▶ proxy ──backendToken──▶ backend)
 //   Phase 3: HLS segments     (browser ──ApiKey=proxyToken──▶ proxy ──backendToken──▶ backend)
 //
-//   Two modes:
-//     DirectStream OFF (proxy):  proxy fetches bytes from backend, returns them
-//     DirectStream ON  (redirect): proxy issues 302 to backend URL
+//   Two modes (controlled by user.direct_stream):
+//     direct_stream=false (proxy):    proxy fetches bytes from backend, returns them
+//     direct_stream=true  (redirect): proxy issues 302 to backend URL
 // ═════════════════════════════════════════════════════════════════════════════
 
 var _ = Describe("Playback flow", func() {
@@ -121,7 +143,7 @@ var _ = Describe("Playback flow", func() {
 			defer fakeBackend.Close()
 
 			setupPlaybackDB(fakeBackend.URL)
-			router, proxyItemID := playbackRouter(false)
+			router, proxyItemID := playbackRouter()
 
 			w := doPost(router, "/items/"+proxyItemID+"/playbackinfo",
 				map[string]interface{}{},
@@ -157,7 +179,7 @@ var _ = Describe("Playback flow", func() {
 			defer fakeBackend.Close()
 
 			setupPlaybackDB(fakeBackend.URL)
-			router, proxyItemID := playbackRouter(false)
+			router, proxyItemID := playbackRouter()
 
 			w := doPost(router, "/items/"+proxyItemID+"/playbackinfo",
 				map[string]interface{}{},
@@ -195,7 +217,7 @@ var _ = Describe("Playback flow", func() {
 			backendURL = fakeBackend.URL
 
 			setupPlaybackDB(fakeBackend.URL)
-			router, proxyItemID := playbackRouter(false)
+			router, proxyItemID := playbackRouter()
 
 			w := doPost(router, "/items/"+proxyItemID+"/playbackinfo",
 				map[string]interface{}{},
@@ -221,7 +243,7 @@ var _ = Describe("Playback flow", func() {
 			defer fakeBackend.Close()
 
 			setupPlaybackDB(fakeBackend.URL)
-			router, proxyItemID := playbackRouter(false)
+			router, proxyItemID := playbackRouter()
 
 			// GET (audio playback info — no body)
 			w := doGet(router, "/items/"+proxyItemID+"/playbackinfo",
@@ -263,7 +285,7 @@ var _ = Describe("Playback flow", func() {
 				defer fakeBackend.Close()
 
 				setupPlaybackDB(fakeBackend.URL)
-				router, proxyItemID := playbackRouter(false)
+				router, proxyItemID := playbackRouter()
 
 				w := doGet(router,
 					"/videos/"+proxyItemID+"/master.m3u8?ApiKey="+pbProxyToken,
@@ -290,7 +312,7 @@ var _ = Describe("Playback flow", func() {
 				defer fakeBackend.Close()
 
 				setupPlaybackDB(fakeBackend.URL)
-				router, proxyItemID := playbackRouter(false)
+				router, proxyItemID := playbackRouter()
 
 				w := doGet(router,
 					"/videos/"+proxyItemID+"/master.m3u8?ApiKey="+pbProxyToken,
@@ -324,7 +346,7 @@ var _ = Describe("Playback flow", func() {
 				defer fakeBackend.Close()
 
 				setupPlaybackDB(fakeBackend.URL)
-				router, proxyItemID := playbackRouter(false)
+				router, proxyItemID := playbackRouter()
 
 				w := doGet(router,
 					"/videos/"+proxyItemID+"/main.m3u8?ApiKey="+pbProxyToken,
@@ -339,17 +361,17 @@ var _ = Describe("Playback flow", func() {
 			})
 		})
 
-		// ── DirectStream ON (redirect mode) ──────────────────────────────
+		// ── direct_stream=true (redirect mode) ───────────────────────────
 
-		Context("DirectStream ON", func() {
+		Context("user direct_stream=true", func() {
 			It("302-redirects to backend URL with the backend token", func() {
 				fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusOK) // should not be reached
 				}))
 				defer fakeBackend.Close()
 
-				setupPlaybackDB(fakeBackend.URL)
-				router, proxyItemID := playbackRouter(true)
+				setupPlaybackDBDirectStream(fakeBackend.URL)
+				router, proxyItemID := playbackRouter()
 
 				w := doGet(router,
 					"/videos/"+proxyItemID+"/master.m3u8?ApiKey="+pbProxyToken,
@@ -365,27 +387,22 @@ var _ = Describe("Playback flow", func() {
 				Expect(loc).NotTo(ContainSubstring("ApiKey=" + pbProxyToken))
 			})
 
-			It("omits ApiKey entirely when no user can be resolved", func() {
+			It("proxies when no user can be resolved (direct_stream only applies to known users)", func() {
 				fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.WriteHeader(http.StatusOK)
+					w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
+					_, _ = fmt.Fprint(w, "#EXTM3U\n#EXT-X-VERSION:6\n")
 				}))
 				defer fakeBackend.Close()
 
-				setupPlaybackDB(fakeBackend.URL)
-				router, proxyItemID := playbackRouter(true)
+				setupPlaybackDBDirectStream(fakeBackend.URL)
+				router, proxyItemID := playbackRouter()
 
 				w := doGet(router,
 					"/videos/"+proxyItemID+"/master.m3u8?ApiKey=&MediaSourceId=x",
 				)
 
-				Expect(w.Code).To(Equal(http.StatusFound))
-				loc := w.Header().Get("Location")
-
-				// Must not contain an empty ApiKey.
-				if strings.Contains(loc, "ApiKey=") {
-					Expect(loc).NotTo(ContainSubstring("ApiKey=&"))
-					Expect(loc).NotTo(MatchRegexp(`ApiKey=$`))
-				}
+				// No user resolved → no direct stream → proxy mode.
+				Expect(w.Code).To(Equal(http.StatusOK))
 			})
 		})
 	})
@@ -414,7 +431,7 @@ var _ = Describe("Playback flow", func() {
 				defer fakeBackend.Close()
 
 				setupPlaybackDB(fakeBackend.URL)
-				router, proxyItemID := playbackRouter(false)
+				router, proxyItemID := playbackRouter()
 
 				// Clean URL: only proxy token (happy path from playlist injection).
 				w := doGet(router,
@@ -436,7 +453,7 @@ var _ = Describe("Playback flow", func() {
 				defer fakeBackend.Close()
 
 				setupPlaybackDB(fakeBackend.URL)
-				router, proxyItemID := playbackRouter(false)
+				router, proxyItemID := playbackRouter()
 
 				// Worst case: both backend and proxy tokens in URL.
 				// tryResolveUser must try all candidates and find the valid session.
@@ -459,7 +476,7 @@ var _ = Describe("Playback flow", func() {
 				defer fakeBackend.Close()
 
 				setupPlaybackDB(fakeBackend.URL)
-				router, proxyItemID := playbackRouter(false)
+				router, proxyItemID := playbackRouter()
 
 				w := doGet(router,
 					"/videos/"+proxyItemID+"/hls1/main/0.mp4?ApiKey="+pbProxyToken,
@@ -479,7 +496,7 @@ var _ = Describe("Playback flow", func() {
 				defer fakeBackend.Close()
 
 				setupPlaybackDB(fakeBackend.URL)
-				router, proxyItemID := playbackRouter(false)
+				router, proxyItemID := playbackRouter()
 
 				w := doGet(router,
 					"/videos/"+proxyItemID+"/abc123/hls1/seg0/file.mp4?ApiKey="+pbProxyToken,
@@ -490,17 +507,17 @@ var _ = Describe("Playback flow", func() {
 			})
 		})
 
-		// ── DirectStream ON ──────────────────────────────────────────────
+		// ── direct_stream=true ──────────────────────────────────────────
 
-		Context("DirectStream ON", func() {
+		Context("user direct_stream=true", func() {
 			It("302-redirects segment requests to the backend with backend token", func() {
 				fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusOK) // should not be reached
 				}))
 				defer fakeBackend.Close()
 
-				setupPlaybackDB(fakeBackend.URL)
-				router, proxyItemID := playbackRouter(true)
+				setupPlaybackDBDirectStream(fakeBackend.URL)
+				router, proxyItemID := playbackRouter()
 
 				w := doGet(router,
 					"/videos/"+proxyItemID+"/hls1/main/0.mp4?ApiKey="+pbProxyToken,
@@ -520,8 +537,8 @@ var _ = Describe("Playback flow", func() {
 				}))
 				defer fakeBackend.Close()
 
-				setupPlaybackDB(fakeBackend.URL)
-				router, proxyItemID := playbackRouter(true)
+				setupPlaybackDBDirectStream(fakeBackend.URL)
+				router, proxyItemID := playbackRouter()
 
 				w := doGet(router,
 					"/videos/"+proxyItemID+"/hls1/main/0.mp4?ApiKey="+pbBackendToken+"&ApiKey="+pbProxyToken,
@@ -552,7 +569,7 @@ var _ = Describe("Playback flow", func() {
 				defer fakeBackend.Close()
 
 				setupPlaybackDB(fakeBackend.URL)
-				router, proxyItemID := playbackRouter(false)
+				router, proxyItemID := playbackRouter()
 
 				w := doGet(router,
 					"/videos/"+proxyItemID+"/stream?ApiKey="+pbProxyToken,
@@ -563,15 +580,15 @@ var _ = Describe("Playback flow", func() {
 			})
 		})
 
-		Context("DirectStream ON", func() {
+		Context("user direct_stream=true", func() {
 			It("redirects to the backend stream URL", func() {
 				fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusOK)
 				}))
 				defer fakeBackend.Close()
 
-				setupPlaybackDB(fakeBackend.URL)
-				router, proxyItemID := playbackRouter(true)
+				setupPlaybackDBDirectStream(fakeBackend.URL)
+				router, proxyItemID := playbackRouter()
 
 				w := doGet(router,
 					"/videos/"+proxyItemID+"/stream?ApiKey="+pbProxyToken+"&static=true",
@@ -599,7 +616,7 @@ var _ = Describe("Playback flow", func() {
 			defer fakeBackend.Close()
 
 			setupPlaybackDB(fakeBackend.URL)
-			router, proxyItemID := playbackRouter(false)
+			router, proxyItemID := playbackRouter()
 
 			doGet(router,
 				"/videos/"+proxyItemID+"/stream?ApiKey="+pbProxyToken+"&static=true",
@@ -625,7 +642,7 @@ var _ = Describe("Playback flow", func() {
 			defer fakeBackend.Close()
 
 			setupPlaybackDB(fakeBackend.URL)
-			router, proxyItemID := playbackRouter(false)
+			router, proxyItemID := playbackRouter()
 
 			w := doPost(router, "/items/"+proxyItemID+"/playbackinfo",
 				map[string]interface{}{},
@@ -643,7 +660,7 @@ var _ = Describe("Playback flow", func() {
 			defer fakeBackend.Close()
 
 			setupPlaybackDB(fakeBackend.URL)
-			router, proxyItemID := playbackRouter(false)
+			router, proxyItemID := playbackRouter()
 
 			w := doGet(router,
 				"/videos/"+proxyItemID+"/master.m3u8?ApiKey="+pbProxyToken,

@@ -2072,6 +2072,7 @@ type UserMutation struct {
 	display_name         *string
 	hashed_password      *string
 	is_admin             *bool
+	direct_stream        *bool
 	created_at           *time.Time
 	updated_at           *time.Time
 	avatar               *[]byte
@@ -2334,6 +2335,42 @@ func (m *UserMutation) OldIsAdmin(ctx context.Context) (v bool, err error) {
 // ResetIsAdmin resets all changes to the "is_admin" field.
 func (m *UserMutation) ResetIsAdmin() {
 	m.is_admin = nil
+}
+
+// SetDirectStream sets the "direct_stream" field.
+func (m *UserMutation) SetDirectStream(b bool) {
+	m.direct_stream = &b
+}
+
+// DirectStream returns the value of the "direct_stream" field in the mutation.
+func (m *UserMutation) DirectStream() (r bool, exists bool) {
+	v := m.direct_stream
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldDirectStream returns the old "direct_stream" field's value of the User entity.
+// If the User object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *UserMutation) OldDirectStream(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldDirectStream is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldDirectStream requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldDirectStream: %w", err)
+	}
+	return oldValue.DirectStream, nil
+}
+
+// ResetDirectStream resets all changes to the "direct_stream" field.
+func (m *UserMutation) ResetDirectStream() {
+	m.direct_stream = nil
 }
 
 // SetCreatedAt sets the "created_at" field.
@@ -2648,7 +2685,7 @@ func (m *UserMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *UserMutation) Fields() []string {
-	fields := make([]string, 0, 8)
+	fields := make([]string, 0, 9)
 	if m.username != nil {
 		fields = append(fields, user.FieldUsername)
 	}
@@ -2660,6 +2697,9 @@ func (m *UserMutation) Fields() []string {
 	}
 	if m.is_admin != nil {
 		fields = append(fields, user.FieldIsAdmin)
+	}
+	if m.direct_stream != nil {
+		fields = append(fields, user.FieldDirectStream)
 	}
 	if m.created_at != nil {
 		fields = append(fields, user.FieldCreatedAt)
@@ -2689,6 +2729,8 @@ func (m *UserMutation) Field(name string) (ent.Value, bool) {
 		return m.HashedPassword()
 	case user.FieldIsAdmin:
 		return m.IsAdmin()
+	case user.FieldDirectStream:
+		return m.DirectStream()
 	case user.FieldCreatedAt:
 		return m.CreatedAt()
 	case user.FieldUpdatedAt:
@@ -2714,6 +2756,8 @@ func (m *UserMutation) OldField(ctx context.Context, name string) (ent.Value, er
 		return m.OldHashedPassword(ctx)
 	case user.FieldIsAdmin:
 		return m.OldIsAdmin(ctx)
+	case user.FieldDirectStream:
+		return m.OldDirectStream(ctx)
 	case user.FieldCreatedAt:
 		return m.OldCreatedAt(ctx)
 	case user.FieldUpdatedAt:
@@ -2758,6 +2802,13 @@ func (m *UserMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetIsAdmin(v)
+		return nil
+	case user.FieldDirectStream:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetDirectStream(v)
 		return nil
 	case user.FieldCreatedAt:
 		v, ok := value.(time.Time)
@@ -2862,6 +2913,9 @@ func (m *UserMutation) ResetField(name string) error {
 		return nil
 	case user.FieldIsAdmin:
 		m.ResetIsAdmin()
+		return nil
+	case user.FieldDirectStream:
+		m.ResetDirectStream()
 		return nil
 	case user.FieldCreatedAt:
 		m.ResetCreatedAt()

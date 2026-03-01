@@ -23,6 +23,8 @@ const (
 	FieldHashedPassword = "hashed_password"
 	// FieldIsAdmin holds the string denoting the is_admin field in the database.
 	FieldIsAdmin = "is_admin"
+	// FieldDirectStream holds the string denoting the direct_stream field in the database.
+	FieldDirectStream = "direct_stream"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
@@ -60,6 +62,7 @@ var Columns = []string{
 	FieldDisplayName,
 	FieldHashedPassword,
 	FieldIsAdmin,
+	FieldDirectStream,
 	FieldCreatedAt,
 	FieldUpdatedAt,
 	FieldAvatar,
@@ -85,6 +88,8 @@ var (
 	HashedPasswordValidator func(string) error
 	// DefaultIsAdmin holds the default value on creation for the "is_admin" field.
 	DefaultIsAdmin bool
+	// DefaultDirectStream holds the default value on creation for the "direct_stream" field.
+	DefaultDirectStream bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
 	DefaultCreatedAt func() time.Time
 	// DefaultUpdatedAt holds the default value on creation for the "updated_at" field.
@@ -121,6 +126,11 @@ func ByHashedPassword(opts ...sql.OrderTermOption) OrderOption {
 // ByIsAdmin orders the results by the is_admin field.
 func ByIsAdmin(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldIsAdmin, opts...).ToFunc()
+}
+
+// ByDirectStream orders the results by the direct_stream field.
+func ByDirectStream(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDirectStream, opts...).ToFunc()
 }
 
 // ByCreatedAt orders the results by the created_at field.

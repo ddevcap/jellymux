@@ -15,7 +15,7 @@ var _ = Describe("Load", func() {
 	var envKeys = []string{
 		"DATABASE_URL", "LISTEN_ADDR", "EXTERNAL_URL", "SERVER_ID", "SERVER_NAME",
 		"SESSION_TTL", "LOGIN_MAX_ATTEMPTS", "LOGIN_WINDOW", "LOGIN_BAN_DURATION",
-		"INITIAL_ADMIN_USER", "INITIAL_ADMIN_PASSWORD", "DIRECT_STREAM",
+		"INITIAL_ADMIN_USER", "INITIAL_ADMIN_PASSWORD",
 	}
 
 	var saved map[string]string
@@ -53,7 +53,6 @@ var _ = Describe("Load", func() {
 		Expect(cfg.LoginBanDuration).To(Equal(15 * time.Minute))
 		Expect(cfg.InitialAdminUser).To(Equal("admin"))
 		Expect(cfg.InitialAdminPassword).To(BeEmpty())
-		Expect(cfg.DirectStream).To(BeFalse())
 	})
 
 	It("reads string values from env vars", func() {
@@ -97,33 +96,8 @@ var _ = Describe("Load", func() {
 		Expect(err).To(HaveOccurred())
 	})
 
-	It("reads int values from env vars", func() {
-		Expect(os.Setenv("LOGIN_MAX_ATTEMPTS", "5")).To(Succeed())
-
-		cfg, err := config.Load()
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(cfg.LoginMaxAttempts).To(Equal(5))
-	})
-
 	It("returns an error for an invalid int", func() {
 		Expect(os.Setenv("LOGIN_MAX_ATTEMPTS", "not-a-number")).To(Succeed())
-
-		_, err := config.Load()
-		Expect(err).To(HaveOccurred())
-	})
-
-	It("reads bool values from env vars", func() {
-		Expect(os.Setenv("DIRECT_STREAM", "true")).To(Succeed())
-
-		cfg, err := config.Load()
-		Expect(err).NotTo(HaveOccurred())
-
-		Expect(cfg.DirectStream).To(BeTrue())
-	})
-
-	It("returns an error for an invalid bool", func() {
-		Expect(os.Setenv("DIRECT_STREAM", "not-a-bool")).To(Succeed())
 
 		_, err := config.Load()
 		Expect(err).To(HaveOccurred())

@@ -189,34 +189,6 @@ func (h *MediaHandler) GetPlaylists(c *gin.Context) {
 	})
 }
 
-// CreatePlaylist handles POST /Playlists.
-func (h *MediaHandler) CreatePlaylist(c *gin.Context) {
-	body, _ := io.ReadAll(io.LimitReader(c.Request.Body, maxBodySize))
-	prefix := prefixFromQuery(c)
-	if prefix == "" {
-		// Try to get prefix from body Ids field
-		var payload struct{ Ids []string }
-		if err := json.Unmarshal(body, &payload); err == nil && len(payload.Ids) > 0 {
-			prefix, _, _ = idtrans.Decode(payload.Ids[0])
-		}
-	}
-	if prefix == "" {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "cannot determine target server"})
-		return
-	}
-	sc, err := h.pool.ForUser(c.Request.Context(), prefix, userFromCtx(c))
-	if err != nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "server not found"})
-		return
-	}
-	respBody, status, err := sc.ProxyJSON(c.Request.Context(), "POST", "/playlists", nil, body)
-	if err != nil {
-		gatewayError(c, err)
-		return
-	}
-	writeJSON(c, respBody, status)
-}
-
 // GetPlaylistItems handles GET /Playlists/:itemId/Items.
 func (h *MediaHandler) GetPlaylistItems(c *gin.Context) {
 	sc, backendID, err := h.routeByID(c, c.Param("itemId"))

@@ -100,6 +100,7 @@ var (
 		{Name: "display_name", Type: field.TypeString},
 		{Name: "hashed_password", Type: field.TypeString},
 		{Name: "is_admin", Type: field.TypeBool, Default: false},
+		{Name: "direct_stream", Type: field.TypeBool, Default: false},
 		{Name: "created_at", Type: field.TypeTime},
 		{Name: "updated_at", Type: field.TypeTime},
 		{Name: "avatar", Type: field.TypeBytes, Nullable: true},

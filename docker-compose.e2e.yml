@@ -20,7 +20,6 @@ services:
       SERVER_NAME: "E2E Proxy"
       INITIAL_ADMIN_USER: "admin"
       INITIAL_ADMIN_PASSWORD: "e2e-admin-password"
-      DIRECT_STREAM: "false"
       SESSION_TTL: "1h"
       HEALTH_CHECK_INTERVAL: "5s"
     depends_on:

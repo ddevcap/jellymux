@@ -51,6 +51,23 @@ var _ = Describe("ProxyUserHandler", func() {
 				Expect(resp["username"]).To(Equal("diana"))
 				Expect(resp["id"]).NotTo(BeEmpty())
 				Expect(resp).NotTo(HaveKey("hashed_password"))
+				Expect(resp["direct_stream"]).To(BeFalse())
+			})
+		})
+
+		Context("with direct_stream enabled", func() {
+			It("returns 201 with direct_stream set to true", func() {
+				w := doPost(router, "/proxy/users", map[string]interface{}{
+					"username":      "streamer",
+					"display_name":  "Direct Streamer",
+					"password":      "securepassword",
+					"direct_stream": true,
+				})
+
+				Expect(w.Code).To(Equal(http.StatusCreated))
+				var resp map[string]interface{}
+				Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
+				Expect(resp["direct_stream"]).To(BeTrue())
 			})
 		})
 
@@ -188,6 +205,35 @@ var _ = Describe("ProxyUserHandler", func() {
 				var resp map[string]interface{}
 				Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
 				Expect(resp["is_admin"]).To(BeTrue())
+			})
+		})
+
+		Context("updating direct_stream", func() {
+			It("returns 200 with direct_stream toggled on", func() {
+				w := doPatch(router, "/proxy/users/"+user.ID.String(),
+					map[string]interface{}{"direct_stream": true},
+				)
+
+				Expect(w.Code).To(Equal(http.StatusOK))
+				var resp map[string]interface{}
+				Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
+				Expect(resp["direct_stream"]).To(BeTrue())
+			})
+
+			It("returns 200 with direct_stream toggled off", func() {
+				// First enable it.
+				doPatch(router, "/proxy/users/"+user.ID.String(),
+					map[string]interface{}{"direct_stream": true},
+				)
+				// Then disable it.
+				w := doPatch(router, "/proxy/users/"+user.ID.String(),
+					map[string]interface{}{"direct_stream": false},
+				)
+
+				Expect(w.Code).To(Equal(http.StatusOK))
+				var resp map[string]interface{}
+				Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
+				Expect(resp["direct_stream"]).To(BeFalse())
 			})
 		})
 

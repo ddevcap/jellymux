@@ -28,6 +28,8 @@ func (User) Fields() []ent.Field {
 			NotEmpty(),
 		field.Bool("is_admin").
 			Default(false),
+		field.Bool("direct_stream").
+			Default(false),
 		field.Time("created_at").
 			Default(time.Now).
 			Immutable(),

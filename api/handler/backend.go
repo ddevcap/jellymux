@@ -88,10 +88,10 @@ func toBackendUserResponse(bu *ent.BackendUser, backendID uuid.UUID) backendUser
 
 type createBackendRequest struct {
 	Name string `json:"name"   binding:"required"`
-	URL  string `json:"url"    binding:"required"`
+	URL  string `json:"url"    binding:"required,http_url"`
 	// prefix is the short unique tag prepended to every item ID from this backend.
-	// Must be 1–8 characters, unique across all backends.
-	Prefix string `json:"prefix" binding:"required,min=1,max=8"`
+	// Must be 1–8 alphanumeric characters, unique across all backends.
+	Prefix string `json:"prefix" binding:"required,min=1,max=8,alphanum"`
 }
 
 // CreateBackend handles POST /proxy/backends.
@@ -196,8 +196,8 @@ func (h *BackendHandler) GetBackend(c *gin.Context) {
 // prefix and jellyfin_server_id are not updatable — changing prefix would
 // invalidate all proxy-scoped item IDs already cached by clients.
 type updateBackendRequest struct {
-	Name    *string `json:"name"`
-	URL     *string `json:"url"`
+	Name    *string `json:"name"    binding:"omitempty,min=1"`
+	URL     *string `json:"url"     binding:"omitempty,http_url"`
 	Enabled *bool   `json:"enabled"`
 }
 
@@ -216,30 +216,13 @@ func (h *BackendHandler) UpdateBackend(c *gin.Context) {
 	}
 
 	upd := h.db.Backend.UpdateOneID(id)
-	changed := false
 
-	if req.Name != nil {
-		if *req.Name == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "name cannot be empty"})
-			return
-		}
-		upd.SetName(*req.Name)
-		changed = true
-	}
-	if req.URL != nil {
-		if *req.URL == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "url cannot be empty"})
-			return
-		}
-		upd.SetURL(*req.URL)
-		changed = true
-	}
-	if req.Enabled != nil {
-		upd.SetEnabled(*req.Enabled)
-		changed = true
-	}
+	upd.SetNillableName(req.Name)
+	upd.SetNillableURL(req.URL)
 
-	if !changed {
+	upd.SetNillableEnabled(req.Enabled)
+
+	if req.Name == nil && req.URL == nil && req.Enabled == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no fields provided to update"})
 		return
 	}
@@ -375,7 +358,7 @@ func (h *BackendHandler) ListBackendUsers(c *gin.Context) {
 
 // updateBackendUserRequest uses pointer fields for partial updates.
 type updateBackendUserRequest struct {
-	BackendUserID *string `json:"backend_user_id"`
+	BackendUserID *string `json:"backend_user_id" binding:"omitempty,min=1"`
 	// Set to "" to clear the per-user token.
 	BackendToken *string `json:"backend_token"`
 	Enabled      *bool   `json:"enabled"`
@@ -396,30 +379,20 @@ func (h *BackendHandler) UpdateBackendUser(c *gin.Context) {
 	}
 
 	upd := h.db.BackendUser.UpdateOneID(mappingID)
-	changed := false
 
-	if req.BackendUserID != nil {
-		if *req.BackendUserID == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "backend_user_id cannot be empty"})
-			return
-		}
-		upd.SetBackendUserID(*req.BackendUserID)
-		changed = true
-	}
+	upd.SetNillableBackendUserID(req.BackendUserID)
+
 	if req.BackendToken != nil {
 		if *req.BackendToken == "" {
 			upd.ClearBackendToken()
 		} else {
 			upd.SetBackendToken(*req.BackendToken)
 		}
-		changed = true
-	}
-	if req.Enabled != nil {
-		upd.SetEnabled(*req.Enabled)
-		changed = true
 	}
 
-	if !changed {
+	upd.SetNillableEnabled(req.Enabled)
+
+	if req.BackendUserID == nil && req.BackendToken == nil && req.Enabled == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no fields provided to update"})
 		return
 	}
@@ -458,7 +431,7 @@ func (h *BackendHandler) LoginToBackend(c *gin.Context) {
 	}
 
 	var req struct {
-		ProxyUserID string `json:"proxy_user_id" binding:"required"`
+		ProxyUserID string `json:"proxy_user_id" binding:"required,uuid"`
 		Username    string `json:"username"      binding:"required"`
 		Password    string `json:"password"      binding:"required"`
 	}
@@ -467,11 +440,7 @@ func (h *BackendHandler) LoginToBackend(c *gin.Context) {
 		return
 	}
 
-	proxyUserID, err := uuid.Parse(req.ProxyUserID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid proxy_user_id"})
-		return
-	}
+	proxyUserID, _ := uuid.Parse(req.ProxyUserID)
 
 	b, err := h.db.Backend.Get(c.Request.Context(), backendID)
 	if err != nil {

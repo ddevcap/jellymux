@@ -34,11 +34,6 @@ type Config struct {
 	// InitialAdminPassword is the plaintext password for the auto-created admin
 	// account. Only used when no users exist in the database.
 	InitialAdminPassword string `env:"INITIAL_ADMIN_PASSWORD"`
-	// DirectStream controls whether streaming requests (video, audio, images,
-	// HLS segments) are redirected directly to the backend instead of being
-	// piped through the proxy. Requires clients to have direct network access
-	// to all backends (e.g. via Tailscale). Default: false.
-	DirectStream bool `env:"DIRECT_STREAM" envDefault:"false"`
 	// ShutdownTimeout is the maximum duration to wait for in-flight requests
 	// to complete during graceful shutdown.
 	ShutdownTimeout time.Duration `env:"SHUTDOWN_TIMEOUT" envDefault:"15s"`

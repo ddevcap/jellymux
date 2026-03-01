@@ -78,7 +78,6 @@ func browseRouter() (*gin.Engine, string) {
 
 	// Playlists
 	priv.GET("/playlists", mediaH.GetPlaylists)
-	priv.POST("/playlists", mediaH.CreatePlaylist)
 	priv.GET("/playlists/:itemId/items", mediaH.GetPlaylistItems)
 
 	// Static stubs
@@ -457,38 +456,6 @@ var _ = Describe("Aggregated browse endpoints", func() {
 			var resp map[string]interface{}
 			Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
 			Expect(resp["TotalRecordCount"]).To(BeNumerically("==", 1))
-		})
-	})
-
-	// ── CreatePlaylist ────────────────────────────────────────────────────────
-
-	Describe("CreatePlaylist", func() {
-		It("forwards the create to the backend identified by Ids in body", func() {
-			fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", "application/json")
-				_, _ = fmt.Fprint(w, `{"Id":"newpl"}`)
-			}))
-			defer fakeBackend.Close()
-			setupBrowseDB(fakeBackend.URL)
-
-			itemID := idtrans.Encode(browsePrefix, "item123")
-			w := doPost(router, "/playlists",
-				map[string]interface{}{"Name": "New Playlist", "Ids": []string{itemID}},
-				browseAuth())
-			Expect(w.Code).To(Equal(http.StatusOK))
-		})
-
-		It("returns 400 when target server cannot be determined", func() {
-			fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.WriteHeader(http.StatusOK)
-			}))
-			defer fakeBackend.Close()
-			setupBrowseDB(fakeBackend.URL)
-
-			w := doPost(router, "/playlists",
-				map[string]interface{}{"Name": "No Target"},
-				browseAuth())
-			Expect(w.Code).To(Equal(http.StatusBadRequest))
 		})
 	})
 

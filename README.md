@@ -33,11 +33,12 @@ on each.
   expose a Movies library, clients see a single unified Movies library. Items
   are fetched from all contributing backends and concatenated. The per-backend
   ID prefix ensures items from different servers never collide.
-- **Direct streaming** (optional) — when `DIRECT_STREAM=true` the proxy issues
-  a `302` redirect for all streaming requests (video, audio, images, HLS)
-  instead of piping bytes through itself. Clients connect directly to the
-  backend over the local network (e.g. Tailscale), saving proxy bandwidth
-  entirely. API calls still go through the proxy for ID rewriting.
+- **Direct streaming** (optional) — when a user's `direct_stream` flag is
+  enabled, the proxy issues a `302` redirect for all streaming requests
+  (video, audio, images, HLS) instead of piping bytes through itself. Clients
+  connect directly to the backend over the local network (e.g. Tailscale),
+  saving proxy bandwidth entirely. API calls still go through the proxy for
+  ID rewriting. Controlled per-user via the admin API.
 
 ---
 
@@ -132,7 +133,6 @@ All configuration is via environment variables.
 | `LOGIN_BAN_DURATION` | `15m` | How long an IP is banned after too many failures |
 | `INITIAL_ADMIN_USER` | `admin` | Username for the auto-seeded admin account |
 | `INITIAL_ADMIN_PASSWORD` | *(empty — seeding skipped)* | Password for the auto-seeded admin account |
-| `DIRECT_STREAM` | `false` | Redirect stream requests directly to backends instead of proxying bytes. Requires clients to have direct network access to all backends (e.g. Tailscale) |
 
 | `SHUTDOWN_TIMEOUT` | `15s` | Max time to wait for in-flight requests during graceful shutdown |
 | `CORS_ORIGINS` | *(empty)* | Comma-separated additional origins allowed for credentialed CORS requests |
@@ -184,7 +184,7 @@ the proxy and are independent of any backend Jellyfin accounts.
 | `GET` | `/proxy/users` | List all users |
 | `GET` | `/proxy/users/:id` | Get a user |
 | `GET` | `/proxy/users/:id/backends` | List all backend mappings for a user |
-| `PATCH` | `/proxy/users/:id` | Update display name, password, or admin flag |
+| `PATCH` | `/proxy/users/:id` | Update display name, password, admin flag, or direct stream |
 | `DELETE` | `/proxy/users/:id` | Delete a user |
 
 **Create user** — `POST /proxy/users`
@@ -194,9 +194,15 @@ the proxy and are independent of any backend Jellyfin accounts.
   "username": "alice",
   "display_name": "Alice",
   "password": "supersecret",
-  "is_admin": false
+  "is_admin": false,
+  "direct_stream": false
 }
 ```
+
+`direct_stream` — when `true`, streaming requests for this user are redirected
+directly to the backend (302) instead of being piped through the proxy. Requires
+clients to have direct network access to all backends (e.g. Tailscale).
+Defaults to `false`.
 
 ---
 

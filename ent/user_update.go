@@ -87,6 +87,20 @@ func (_u *UserUpdate) SetNillableIsAdmin(v *bool) *UserUpdate {
 	return _u
 }
 
+// SetDirectStream sets the "direct_stream" field.
+func (_u *UserUpdate) SetDirectStream(v bool) *UserUpdate {
+	_u.mutation.SetDirectStream(v)
+	return _u
+}
+
+// SetNillableDirectStream sets the "direct_stream" field if the given value is not nil.
+func (_u *UserUpdate) SetNillableDirectStream(v *bool) *UserUpdate {
+	if v != nil {
+		_u.SetDirectStream(*v)
+	}
+	return _u
+}
+
 // SetUpdatedAt sets the "updated_at" field.
 func (_u *UserUpdate) SetUpdatedAt(v time.Time) *UserUpdate {
 	_u.mutation.SetUpdatedAt(v)
@@ -282,6 +296,9 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.IsAdmin(); ok {
 		_spec.SetField(user.FieldIsAdmin, field.TypeBool, value)
 	}
+	if value, ok := _u.mutation.DirectStream(); ok {
+		_spec.SetField(user.FieldDirectStream, field.TypeBool, value)
+	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)
 	}
@@ -459,6 +476,20 @@ func (_u *UserUpdateOne) SetIsAdmin(v bool) *UserUpdateOne {
 func (_u *UserUpdateOne) SetNillableIsAdmin(v *bool) *UserUpdateOne {
 	if v != nil {
 		_u.SetIsAdmin(*v)
+	}
+	return _u
+}
+
+// SetDirectStream sets the "direct_stream" field.
+func (_u *UserUpdateOne) SetDirectStream(v bool) *UserUpdateOne {
+	_u.mutation.SetDirectStream(v)
+	return _u
+}
+
+// SetNillableDirectStream sets the "direct_stream" field if the given value is not nil.
+func (_u *UserUpdateOne) SetNillableDirectStream(v *bool) *UserUpdateOne {
+	if v != nil {
+		_u.SetDirectStream(*v)
 	}
 	return _u
 }
@@ -687,6 +718,9 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 	}
 	if value, ok := _u.mutation.IsAdmin(); ok {
 		_spec.SetField(user.FieldIsAdmin, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.DirectStream(); ok {
+		_spec.SetField(user.FieldDirectStream, field.TypeBool, value)
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(user.FieldUpdatedAt, field.TypeTime, value)

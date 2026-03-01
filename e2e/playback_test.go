@@ -84,7 +84,7 @@ var _ = Describe("Playback", func() {
 				"?api_key="+userToken, "")
 			defer resp.Body.Close()
 
-			// Should get the actual file, not a redirect (DIRECT_STREAM=false in e2e).
+			// Should get the actual file, not a redirect (user.direct_stream defaults to false).
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			Expect(resp.Header.Get("Content-Type")).To(SatisfyAny(
 				ContainSubstring("video/"),

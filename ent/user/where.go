@@ -76,6 +76,11 @@ func IsAdmin(v bool) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldIsAdmin, v))
 }
 
+// DirectStream applies equality check predicate on the "direct_stream" field. It's identical to DirectStreamEQ.
+func DirectStream(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldDirectStream, v))
+}
+
 // CreatedAt applies equality check predicate on the "created_at" field. It's identical to CreatedAtEQ.
 func CreatedAt(v time.Time) predicate.User {
 	return predicate.User(sql.FieldEQ(FieldCreatedAt, v))
@@ -299,6 +304,16 @@ func IsAdminEQ(v bool) predicate.User {
 // IsAdminNEQ applies the NEQ predicate on the "is_admin" field.
 func IsAdminNEQ(v bool) predicate.User {
 	return predicate.User(sql.FieldNEQ(FieldIsAdmin, v))
+}
+
+// DirectStreamEQ applies the EQ predicate on the "direct_stream" field.
+func DirectStreamEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldEQ(FieldDirectStream, v))
+}
+
+// DirectStreamNEQ applies the NEQ predicate on the "direct_stream" field.
+func DirectStreamNEQ(v bool) predicate.User {
+	return predicate.User(sql.FieldNEQ(FieldDirectStream, v))
 }
 
 // CreatedAtEQ applies the EQ predicate on the "created_at" field.

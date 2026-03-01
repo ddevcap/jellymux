@@ -101,7 +101,7 @@ func (h *AuthHandler) AuthenticateByName(c *gin.Context) {
 			"EnableAutoLogin":           false,
 			"LastLoginDate":             now,
 			"LastActivityDate":          now,
-			"Policy":                    buildUserPolicy(user.IsAdmin, h.cfg),
+			"Policy":                    buildUserPolicy(user.IsAdmin, user.DirectStream, h.cfg),
 		},
 		"SessionInfo": gin.H{
 			"DeviceId":   deviceID,

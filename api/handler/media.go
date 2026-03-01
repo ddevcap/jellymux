@@ -268,7 +268,7 @@ func emptyPagedList() gin.H {
 }
 
 // redirectStream issues a 302 redirect pointing the client directly at the
-// backend URL. Used when cfg.DirectStream is true — the client fetches bytes
+// backend URL. Used when the user's direct_stream flag is true — the client fetches bytes
 // from the backend over the local network (e.g. Tailscale) instead of having
 // them piped through the proxy.
 func redirectStream(c *gin.Context, sc *backend.ServerClient, path string, query url.Values) {
@@ -430,11 +430,12 @@ func injectProxyToken(body []byte, token string) []byte {
 // buildUserPolicy returns the Jellyfin Policy object for a proxy user.
 // Centralised so the same policy shape is returned from both the login
 // response (AuthenticateByName) and the user-object endpoints.
-func buildUserPolicy(isAdmin bool, cfg config.Config) gin.H {
+func buildUserPolicy(isAdmin bool, directStream bool, cfg config.Config) gin.H {
 	return gin.H{
 		"IsAdministrator":                 isAdmin,
 		"IsHidden":                        false,
 		"IsDisabled":                      false,
+		"DirectStream":                    directStream,
 		"EnableRemoteControlOfOtherUsers": isAdmin,
 		"EnableSharedDeviceControl":       false,
 		"EnableRemoteAccess":              true,
@@ -494,7 +495,7 @@ func buildUserObject(user *ent.User, cfg config.Config) gin.H {
 			"LatestItemsExcludes":        []interface{}{},
 			"OrderedViews":               []interface{}{},
 		},
-		"Policy": buildUserPolicy(user.IsAdmin, cfg),
+		"Policy": buildUserPolicy(user.IsAdmin, user.DirectStream, cfg),
 	}
 	if user.Avatar != nil && len(*user.Avatar) > 0 {
 		sum := sha256.Sum256(*user.Avatar)

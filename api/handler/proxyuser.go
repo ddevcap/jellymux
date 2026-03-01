@@ -24,32 +24,35 @@ func NewProxyUserHandler(db *ent.Client) *ProxyUserHandler {
 // userResponse is the outward representation of a proxy user.
 // hashed_password is intentionally omitted.
 type userResponse struct {
-	ID          uuid.UUID `json:"id"`
-	Username    string    `json:"username"`
-	DisplayName string    `json:"display_name"`
-	IsAdmin     bool      `json:"is_admin"`
-	CreatedAt   time.Time `json:"created_at"`
-	UpdatedAt   time.Time `json:"updated_at"`
+	ID           uuid.UUID `json:"id"`
+	Username     string    `json:"username"`
+	DisplayName  string    `json:"display_name"`
+	IsAdmin      bool      `json:"is_admin"`
+	DirectStream bool      `json:"direct_stream"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
 }
 
 func toUserResponse(u *ent.User) userResponse {
 	return userResponse{
-		ID:          u.ID,
-		Username:    u.Username,
-		DisplayName: u.DisplayName,
-		IsAdmin:     u.IsAdmin,
-		CreatedAt:   u.CreatedAt,
-		UpdatedAt:   u.UpdatedAt,
+		ID:           u.ID,
+		Username:     u.Username,
+		DisplayName:  u.DisplayName,
+		IsAdmin:      u.IsAdmin,
+		DirectStream: u.DirectStream,
+		CreatedAt:    u.CreatedAt,
+		UpdatedAt:    u.UpdatedAt,
 	}
 }
 
 // ── Create ────────────────────────────────────────────────────────────────────
 
 type createUserRequest struct {
-	Username    string `json:"username"     binding:"required"`
-	DisplayName string `json:"display_name" binding:"required"`
-	Password    string `json:"password"     binding:"required,min=8"`
-	IsAdmin     bool   `json:"is_admin"`
+	Username     string `json:"username"      binding:"required,min=1"`
+	DisplayName  string `json:"display_name"  binding:"required,min=1"`
+	Password     string `json:"password"      binding:"required,min=8"`
+	IsAdmin      bool   `json:"is_admin"`
+	DirectStream bool   `json:"direct_stream"`
 }
 
 // CreateUser handles POST /proxy/users.
@@ -71,6 +74,7 @@ func (h *ProxyUserHandler) CreateUser(c *gin.Context) {
 		SetDisplayName(req.DisplayName).
 		SetHashedPassword(string(hash)).
 		SetIsAdmin(req.IsAdmin).
+		SetDirectStream(req.DirectStream).
 		Save(c.Request.Context())
 	if err != nil {
 		if ent.IsConstraintError(err) {
@@ -131,9 +135,10 @@ func (h *ProxyUserHandler) GetProxyUser(c *gin.Context) {
 // updateUserRequest uses pointer fields so that absent fields are distinguished
 // from zero-values, enabling true partial updates.
 type updateUserRequest struct {
-	DisplayName *string `json:"display_name"`
-	Password    *string `json:"password"`
-	IsAdmin     *bool   `json:"is_admin"`
+	DisplayName  *string `json:"display_name"  binding:"omitempty,min=1"`
+	Password     *string `json:"password"      binding:"omitempty,min=8"`
+	IsAdmin      *bool   `json:"is_admin"`
+	DirectStream *bool   `json:"direct_stream"`
 }
 
 // UpdateUser handles PATCH /proxy/users/:id.
@@ -151,37 +156,22 @@ func (h *ProxyUserHandler) UpdateUser(c *gin.Context) {
 	}
 
 	upd := h.db.User.UpdateOneID(id)
-	changed := false
 
-	if req.DisplayName != nil {
-		if *req.DisplayName == "" {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "display_name cannot be empty"})
-			return
-		}
-		upd.SetDisplayName(*req.DisplayName)
-		changed = true
-	}
+	upd.SetNillableDisplayName(req.DisplayName)
 
 	if req.Password != nil {
-		if len(*req.Password) < 8 {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "password must be at least 8 characters"})
-			return
-		}
 		hash, err := bcrypt.GenerateFromPassword([]byte(*req.Password), BcryptCost)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to hash password"})
 			return
 		}
 		upd.SetHashedPassword(string(hash))
-		changed = true
 	}
 
-	if req.IsAdmin != nil {
-		upd.SetIsAdmin(*req.IsAdmin)
-		changed = true
-	}
+	upd.SetNillableIsAdmin(req.IsAdmin)
+	upd.SetNillableDirectStream(req.DirectStream)
 
-	if !changed {
+	if req.DisplayName == nil && req.Password == nil && req.IsAdmin == nil && req.DirectStream == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "no fields provided to update"})
 		return
 	}

@@ -26,3 +26,11 @@ func nilIfEmpty(s string) *string {
 	}
 	return &s
 }
+
+// shouldDirectStream returns true when streaming requests should be redirected
+// directly to the backend (302) instead of being piped through the proxy.
+// The decision is based solely on the user's direct_stream field.
+// When user is nil (unauthenticated request), defaults to false (proxy mode).
+func shouldDirectStream(user *ent.User) bool {
+	return user != nil && user.DirectStream
+}

@@ -31,12 +31,11 @@ const (
 
 // mediaTestRouter builds a gin router with the three new endpoints wired to a
 // MediaHandler. The Download route is public; Lyrics and GetCollectionItems sit
-// behind the Auth middleware. directStream controls the DirectStream config flag.
-func mediaTestRouter(directStream bool) (*gin.Engine, string) {
+// behind the Auth middleware.
+func mediaTestRouter() (*gin.Engine, string) {
 	cfg := config.Config{
-		ServerID:     "test-server-id",
-		ServerName:   "Test Proxy",
-		DirectStream: directStream,
+		ServerID:   "test-server-id",
+		ServerName: "Test Proxy",
 	}
 	pool := backend.NewPool(db, cfg)
 	mediaH := handler.NewMediaHandler(pool, cfg, db)
@@ -107,6 +106,31 @@ func setupMediaDB(fakeBackendURL string) string {
 	return mediaTestToken
 }
 
+// setupMediaDBDirectStream is like setupMediaDB but creates a user with
+// direct_stream enabled — streaming/download requests for this user should 302-redirect.
+func setupMediaDBDirectStream(fakeBackendURL string) string {
+	b, err := db.Backend.Create().
+		SetName("Test Backend").
+		SetURL(fakeBackendURL).
+		SetJellyfinServerID("fake-server-id").
+		SetPrefix(mediaTestPrefix).
+		Save(mediaCtx())
+	Expect(err).NotTo(HaveOccurred())
+
+	u, err := db.User.Create().
+		SetUsername("mediatest").
+		SetDisplayName("mediatest").
+		SetHashedPassword("$2a$04$dummy").
+		SetDirectStream(true).
+		Save(mediaCtx())
+	Expect(err).NotTo(HaveOccurred())
+
+	createBackendUser(b, u, "backend-user-id", "backend-test-token")
+	createSession(u, mediaTestToken)
+
+	return mediaTestToken
+}
+
 var _ = Describe("MediaHandler", func() {
 	BeforeEach(func() {
 		cleanDB()
@@ -126,7 +150,7 @@ var _ = Describe("MediaHandler", func() {
 				defer fakeBackend.Close()
 
 				token := setupMediaDB(fakeBackend.URL)
-				router, proxyID := mediaTestRouter(false)
+				router, proxyID := mediaTestRouter()
 
 				w := doGet(router, "/items/"+proxyID+"/download",
 					map[string]string{"X-Emby-Token": token})
@@ -144,7 +168,7 @@ var _ = Describe("MediaHandler", func() {
 				defer fakeBackend.Close()
 
 				token := setupMediaDB(fakeBackend.URL)
-				router, _ := mediaTestRouter(false)
+				router, _ := mediaTestRouter()
 
 				w := doGet(router, "/items/no-prefix-id/download",
 					map[string]string{"X-Emby-Token": token})
@@ -153,15 +177,15 @@ var _ = Describe("MediaHandler", func() {
 			})
 		})
 
-		Context("with DirectStream enabled", func() {
+		Context("with user direct_stream enabled", func() {
 			It("redirects the client directly to the backend URL", func() {
 				fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 					w.WriteHeader(http.StatusOK) // should not be reached
 				}))
 				defer fakeBackend.Close()
 
-				token := setupMediaDB(fakeBackend.URL)
-				router, proxyID := mediaTestRouter(true)
+				token := setupMediaDBDirectStream(fakeBackend.URL)
+				router, proxyID := mediaTestRouter()
 
 				w := doGet(router, "/items/"+proxyID+"/download",
 					map[string]string{"X-Emby-Token": token})
@@ -191,7 +215,7 @@ var _ = Describe("MediaHandler", func() {
 				defer fakeBackend.Close()
 
 				token := setupMediaDB(fakeBackend.URL)
-				router, proxyID := mediaTestRouter(false)
+				router, proxyID := mediaTestRouter()
 
 				w := doGet(router, "/audio/"+proxyID+"/lyrics",
 					map[string]string{"X-Emby-Token": token})
@@ -211,7 +235,7 @@ var _ = Describe("MediaHandler", func() {
 				defer fakeBackend.Close()
 
 				token := setupMediaDB(fakeBackend.URL)
-				router, proxyID := mediaTestRouter(false)
+				router, proxyID := mediaTestRouter()
 
 				w := doGet(router, "/audio/"+proxyID+"/lyrics",
 					map[string]string{"X-Emby-Token": token})
@@ -228,7 +252,7 @@ var _ = Describe("MediaHandler", func() {
 				defer fakeBackend.Close()
 
 				token := setupMediaDB(fakeBackend.URL)
-				router, _ := mediaTestRouter(false)
+				router, _ := mediaTestRouter()
 
 				w := doGet(router, "/audio/no-prefix-id/lyrics",
 					map[string]string{"X-Emby-Token": token})
@@ -245,7 +269,7 @@ var _ = Describe("MediaHandler", func() {
 				defer fakeBackend.Close()
 
 				setupMediaDB(fakeBackend.URL)
-				router, proxyID := mediaTestRouter(false)
+				router, proxyID := mediaTestRouter()
 
 				w := doGet(router, "/audio/"+proxyID+"/lyrics") // no auth header
 
@@ -271,7 +295,7 @@ var _ = Describe("MediaHandler", func() {
 				defer fakeBackend.Close()
 
 				token := setupMediaDB(fakeBackend.URL)
-				router, proxyID := mediaTestRouter(false)
+				router, proxyID := mediaTestRouter()
 
 				w := doGet(router, "/collections/"+proxyID+"/items",
 					map[string]string{"X-Emby-Token": token})
@@ -298,7 +322,7 @@ var _ = Describe("MediaHandler", func() {
 				defer fakeBackend.Close()
 
 				token := setupMediaDB(fakeBackend.URL)
-				router, proxyID := mediaTestRouter(false)
+				router, proxyID := mediaTestRouter()
 
 				w := doGet(router, "/collections/"+proxyID+"/items",
 					map[string]string{"X-Emby-Token": token})
@@ -319,7 +343,7 @@ var _ = Describe("MediaHandler", func() {
 				defer fakeBackend.Close()
 
 				token := setupMediaDB(fakeBackend.URL)
-				router, _ := mediaTestRouter(false)
+				router, _ := mediaTestRouter()
 
 				w := doGet(router, "/collections/no-prefix-id/items",
 					map[string]string{"X-Emby-Token": token})
@@ -336,7 +360,7 @@ var _ = Describe("MediaHandler", func() {
 				defer fakeBackend.Close()
 
 				setupMediaDB(fakeBackend.URL)
-				router, proxyID := mediaTestRouter(false)
+				router, proxyID := mediaTestRouter()
 
 				w := doGet(router, "/collections/"+proxyID+"/items") // no auth header
 
@@ -360,7 +384,7 @@ var _ = Describe("MediaHandler", func() {
 				defer fakeBackend.Close()
 
 				token := setupMediaDB(fakeBackend.URL)
-				router, proxyID := mediaTestRouter(false)
+				router, proxyID := mediaTestRouter()
 
 				w := doGet(router, "/shows/"+proxyID+"/episodes",
 					map[string]string{"X-Emby-Token": token})
@@ -386,7 +410,7 @@ var _ = Describe("MediaHandler", func() {
 				defer fakeBackend.Close()
 
 				token := setupMediaDB(fakeBackend.URL)
-				router, proxyID := mediaTestRouter(false)
+				router, proxyID := mediaTestRouter()
 
 				startItemProxyID := idtrans.Encode(mediaTestPrefix, "deadbeef1234")
 				w := doGet(router,
@@ -410,7 +434,7 @@ var _ = Describe("MediaHandler", func() {
 				defer fakeBackend.Close()
 
 				token := setupMediaDB(fakeBackend.URL)
-				router, proxyID := mediaTestRouter(false)
+				router, proxyID := mediaTestRouter()
 
 				adjacentProxyID := idtrans.Encode(mediaTestPrefix, "cafebabe5678")
 				w := doGet(router,
@@ -430,7 +454,7 @@ var _ = Describe("MediaHandler", func() {
 				defer fakeBackend.Close()
 
 				setupMediaDB(fakeBackend.URL)
-				router, proxyID := mediaTestRouter(false)
+				router, proxyID := mediaTestRouter()
 
 				w := doGet(router, "/shows/"+proxyID+"/episodes")
 				Expect(w.Code).To(Equal(http.StatusUnauthorized))
