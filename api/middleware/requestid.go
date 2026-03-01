@@ -30,13 +30,21 @@ func RequestLogger() gin.HandlerFunc {
 		c.Next()
 		latency := time.Since(start)
 
-		slog.Info("request",
+		path := c.Request.URL.Path
+		query := c.Request.URL.RawQuery
+
+		attrs := []any{
 			"request_id", requestid.Get(c),
 			"method", c.Request.Method,
-			"path", c.Request.URL.Path,
+			"path", path,
 			"status", c.Writer.Status(),
 			"latency_ms", latency.Milliseconds(),
 			"ip", c.ClientIP(),
-		)
+		}
+		if query != "" {
+			attrs = append(attrs, "query", query)
+		}
+
+		slog.Info("request", attrs...)
 	}
 }

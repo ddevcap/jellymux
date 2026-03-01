@@ -4,10 +4,11 @@ package e2e
 
 import (
 	"net/http"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/ddevcap/jellyfin-proxy/idtrans"
 )
 
 var _ = Describe("Library views", func() {
@@ -32,7 +33,7 @@ var _ = Describe("Library views", func() {
 			}
 
 			// Both servers have movies, so there should be a merged_movies view.
-			Expect(ids).To(ContainElement("merged_movies"),
+			Expect(ids).To(ContainElement(idtrans.EncodeMerged("movies")),
 				"expected a merged_movies view when both backends have movies libraries")
 		})
 
@@ -43,7 +44,7 @@ var _ = Describe("Library views", func() {
 			body := parseJSONObject(resp)
 			for _, raw := range body["Items"].([]interface{}) {
 				item := raw.(map[string]interface{})
-				if item["Id"].(string) == "merged_movies" {
+				if item["Id"].(string) == idtrans.EncodeMerged("movies") {
 					Expect(item["Name"]).To(Equal("Movies"))
 					Expect(item["CollectionType"]).To(Equal("movies"))
 					Expect(item["Type"]).To(Equal("CollectionFolder"))
@@ -51,7 +52,7 @@ var _ = Describe("Library views", func() {
 					return
 				}
 			}
-			Fail("merged_movies view not found in response")
+			Fail("merged movies view not found in response")
 		})
 	})
 
@@ -67,7 +68,7 @@ var _ = Describe("Library views", func() {
 			var hasMergedMovies bool
 			for _, raw := range items {
 				item := raw.(map[string]interface{})
-				if item["Id"].(string) == "merged_movies" {
+				if item["Id"].(string) == idtrans.EncodeMerged("movies") {
 					hasMergedMovies = true
 					break
 				}
@@ -78,11 +79,11 @@ var _ = Describe("Library views", func() {
 
 	Describe("GET /Items/merged_movies (virtual collection)", func() {
 		It("returns a synthetic CollectionFolder for the merged view", func() {
-			resp := get(proxyURL("/items/merged_movies"), userToken)
+			resp := get(proxyURL("/items/"+idtrans.EncodeMerged("movies")), userToken)
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			body := parseJSONObject(resp)
-			Expect(body["Id"]).To(Equal("merged_movies"))
+			Expect(body["Id"]).To(Equal(idtrans.EncodeMerged("movies")))
 			Expect(body["Name"]).To(Equal("Movies"))
 			Expect(body["Type"]).To(Equal("CollectionFolder"))
 			Expect(body["CollectionType"]).To(Equal("movies"))
@@ -92,18 +93,18 @@ var _ = Describe("Library views", func() {
 
 	Describe("GET /Users/:id/Items/merged_movies (virtual collection via user path)", func() {
 		It("returns a synthetic CollectionFolder for the merged view", func() {
-			resp := get(proxyURL("/users/"+testUser.ID+"/items/merged_movies"), userToken)
+			resp := get(proxyURL("/users/"+testUser.ID+"/items/"+idtrans.EncodeMerged("movies")), userToken)
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			body := parseJSONObject(resp)
-			Expect(body["Id"]).To(Equal("merged_movies"))
+			Expect(body["Id"]).To(Equal(idtrans.EncodeMerged("movies")))
 			Expect(body["Type"]).To(Equal("CollectionFolder"))
 		})
 	})
 
-	Describe("Item ID prefixes", func() {
-		It("all items from browsing a merged library have server-prefixed IDs", func() {
-			resp := get(proxyURL("/items?parentId=merged_movies"), userToken)
+	Describe("Item ID format", func() {
+		It("all items from browsing a merged library have UUID IDs", func() {
+			resp := get(proxyURL("/items?parentId="+idtrans.EncodeMerged("movies")), userToken)
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			items, total := pagedItems(resp)
@@ -113,11 +114,10 @@ var _ = Describe("Library views", func() {
 			for _, raw := range items {
 				item := raw.(map[string]interface{})
 				id := item["Id"].(string)
-				// Must have a prefix separator.
-				Expect(strings.Contains(id, "_")).To(BeTrue(),
-					"item ID %q should be prefixed", id)
+				// Must be a 32-char hex string (dashless UUID).
+				Expect(id).To(MatchRegexp(`^[0-9a-f]{32}$`),
+					"item ID %q should be a dashless UUID", id)
 			}
 		})
 	})
 })
-

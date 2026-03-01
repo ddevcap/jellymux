@@ -30,15 +30,7 @@ func (h *AvatarHandler) GetAvatar(c *gin.Context) {
 	if !ok {
 		return
 	}
-	if user.Avatar == nil || len(*user.Avatar) == 0 {
-		c.Status(http.StatusNotFound)
-		return
-	}
-	ct := "image/jpeg"
-	if user.AvatarContentType != nil && *user.AvatarContentType != "" {
-		ct = *user.AvatarContentType
-	}
-	c.Data(http.StatusOK, ct, *user.Avatar)
+	h.serveAvatar(c, user)
 }
 
 // UploadAvatar handles POST /Users/:userId/Images/Primary.
@@ -205,6 +197,46 @@ func looksLikeBase64(s string) bool {
 		}
 	}
 	return true
+}
+
+// GetAvatarByQuery handles GET /UserImage?userId=...
+// The Android TV app uses this endpoint instead of /Users/:userId/Images/Primary.
+func (h *AvatarHandler) GetAvatarByQuery(c *gin.Context) {
+	idStr := c.Query("userId")
+	if idStr == "" {
+		// Fall back to the authenticated user.
+		user := userFromCtx(c)
+		if user == nil {
+			c.Status(http.StatusNotFound)
+			return
+		}
+		h.serveAvatar(c, user)
+		return
+	}
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID"})
+		return
+	}
+	user, err := h.db.User.Get(c.Request.Context(), id)
+	if err != nil {
+		c.Status(http.StatusNotFound)
+		return
+	}
+	h.serveAvatar(c, user)
+}
+
+// serveAvatar writes the user's avatar image to the response.
+func (h *AvatarHandler) serveAvatar(c *gin.Context, user *ent.User) {
+	if user.Avatar == nil || len(*user.Avatar) == 0 {
+		c.Status(http.StatusNotFound)
+		return
+	}
+	ct := "image/jpeg"
+	if user.AvatarContentType != nil && *user.AvatarContentType != "" {
+		ct = *user.AvatarContentType
+	}
+	c.Data(http.StatusOK, ct, *user.Avatar)
 }
 
 func (h *AvatarHandler) resolveUser(c *gin.Context) (*ent.User, bool) {

@@ -43,7 +43,6 @@ type BackendMutation struct {
 	name                 *string
 	url                  *string
 	jellyfin_server_id   *string
-	prefix               *string
 	enabled              *bool
 	created_at           *time.Time
 	clearedFields        map[string]struct{}
@@ -267,42 +266,6 @@ func (m *BackendMutation) ResetJellyfinServerID() {
 	m.jellyfin_server_id = nil
 }
 
-// SetPrefix sets the "prefix" field.
-func (m *BackendMutation) SetPrefix(s string) {
-	m.prefix = &s
-}
-
-// Prefix returns the value of the "prefix" field in the mutation.
-func (m *BackendMutation) Prefix() (r string, exists bool) {
-	v := m.prefix
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldPrefix returns the old "prefix" field's value of the Backend entity.
-// If the Backend object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BackendMutation) OldPrefix(ctx context.Context) (v string, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldPrefix is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldPrefix requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldPrefix: %w", err)
-	}
-	return oldValue.Prefix, nil
-}
-
-// ResetPrefix resets all changes to the "prefix" field.
-func (m *BackendMutation) ResetPrefix() {
-	m.prefix = nil
-}
-
 // SetEnabled sets the "enabled" field.
 func (m *BackendMutation) SetEnabled(b bool) {
 	m.enabled = &b
@@ -463,7 +426,7 @@ func (m *BackendMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *BackendMutation) Fields() []string {
-	fields := make([]string, 0, 6)
+	fields := make([]string, 0, 5)
 	if m.name != nil {
 		fields = append(fields, backend.FieldName)
 	}
@@ -472,9 +435,6 @@ func (m *BackendMutation) Fields() []string {
 	}
 	if m.jellyfin_server_id != nil {
 		fields = append(fields, backend.FieldJellyfinServerID)
-	}
-	if m.prefix != nil {
-		fields = append(fields, backend.FieldPrefix)
 	}
 	if m.enabled != nil {
 		fields = append(fields, backend.FieldEnabled)
@@ -496,8 +456,6 @@ func (m *BackendMutation) Field(name string) (ent.Value, bool) {
 		return m.URL()
 	case backend.FieldJellyfinServerID:
 		return m.JellyfinServerID()
-	case backend.FieldPrefix:
-		return m.Prefix()
 	case backend.FieldEnabled:
 		return m.Enabled()
 	case backend.FieldCreatedAt:
@@ -517,8 +475,6 @@ func (m *BackendMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldURL(ctx)
 	case backend.FieldJellyfinServerID:
 		return m.OldJellyfinServerID(ctx)
-	case backend.FieldPrefix:
-		return m.OldPrefix(ctx)
 	case backend.FieldEnabled:
 		return m.OldEnabled(ctx)
 	case backend.FieldCreatedAt:
@@ -552,13 +508,6 @@ func (m *BackendMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetJellyfinServerID(v)
-		return nil
-	case backend.FieldPrefix:
-		v, ok := value.(string)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetPrefix(v)
 		return nil
 	case backend.FieldEnabled:
 		v, ok := value.(bool)
@@ -631,9 +580,6 @@ func (m *BackendMutation) ResetField(name string) error {
 		return nil
 	case backend.FieldJellyfinServerID:
 		m.ResetJellyfinServerID()
-		return nil
-	case backend.FieldPrefix:
-		m.ResetPrefix()
 		return nil
 	case backend.FieldEnabled:
 		m.ResetEnabled()

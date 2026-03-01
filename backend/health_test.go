@@ -33,7 +33,6 @@ var _ = Describe("HealthChecker", func() {
 			SetName("healthy").
 			SetURL(srv.URL).
 			SetJellyfinServerID("jf-healthy").
-			SetPrefix("h1").
 			SetEnabled(true).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -55,7 +54,6 @@ var _ = Describe("HealthChecker", func() {
 			SetName("dead").
 			SetURL("http://127.0.0.1:1"). // nothing listening
 			SetJellyfinServerID("jf-dead").
-			SetPrefix("d1").
 			SetEnabled(true).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -89,7 +87,6 @@ var _ = Describe("HealthChecker", func() {
 			SetName("flaky").
 			SetURL(srv.URL).
 			SetJellyfinServerID("jf-flaky").
-			SetPrefix("f1").
 			SetEnabled(true).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -131,7 +128,6 @@ var _ = Describe("HealthChecker", func() {
 				SetName("circuit-test").
 				SetURL(srv.URL).
 				SetJellyfinServerID("jf-circuit").
-				SetPrefix("c1").
 				SetEnabled(true).
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -169,7 +165,6 @@ var _ = Describe("HealthChecker", func() {
 				SetName("reset-test").
 				SetURL(srv.URL).
 				SetJellyfinServerID("jf-reset").
-				SetPrefix("r1").
 				SetEnabled(true).
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -210,7 +205,6 @@ var _ = Describe("HealthChecker", func() {
 				SetName("status-test").
 				SetURL(srv.URL).
 				SetJellyfinServerID("jf-status").
-				SetPrefix("s1").
 				SetEnabled(true).
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())

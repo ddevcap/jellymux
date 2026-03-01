@@ -53,7 +53,50 @@ var _ = Describe("AuthHandler", func() {
 				var resp map[string]interface{}
 				Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
 				Expect(resp["AccessToken"]).NotTo(BeEmpty())
-				Expect(resp["ServerId"]).To(Equal("test-server-id"))
+				Expect(resp["ServerId"]).To(Equal("testserverid"))
+			})
+
+			It("returns a complete User object with Configuration and Policy", func() {
+				createUser("bob", "correctpass1", false)
+
+				w := doPost(router, "/Users/AuthenticateByName", map[string]string{
+					"Username": "bob",
+					"Pw":       "correctpass1",
+				})
+
+				Expect(w.Code).To(Equal(http.StatusOK))
+				var resp map[string]interface{}
+				Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
+
+				// Top-level fields
+				Expect(resp).To(HaveKey("User"))
+				Expect(resp).To(HaveKey("SessionInfo"))
+				Expect(resp).To(HaveKey("AccessToken"))
+				Expect(resp).To(HaveKey("ServerId"))
+
+				user := resp["User"].(map[string]interface{})
+				Expect(user).To(HaveKey("Name"))
+				Expect(user).To(HaveKey("Id"))
+				Expect(user).To(HaveKey("ServerId"))
+				Expect(user).To(HaveKey("Configuration"))
+				Expect(user).To(HaveKey("Policy"))
+				Expect(user).To(HaveKey("HasPassword"))
+
+				// Configuration must be a map with expected keys
+				cfg := user["Configuration"].(map[string]interface{})
+				Expect(cfg).To(HaveKey("PlayDefaultAudioTrack"))
+				Expect(cfg).To(HaveKey("SubtitleMode"))
+
+				// Policy must include key permission flags
+				policy := user["Policy"].(map[string]interface{})
+				Expect(policy).To(HaveKey("IsAdministrator"))
+				Expect(policy).To(HaveKey("EnableMediaPlayback"))
+
+				// SessionInfo must include UserId so SDK can identify the session
+				session := resp["SessionInfo"].(map[string]interface{})
+				Expect(session).To(HaveKey("UserId"))
+				Expect(session).To(HaveKey("ServerId"))
+				Expect(session).To(HaveKey("DeviceId"))
 			})
 		})
 

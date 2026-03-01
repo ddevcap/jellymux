@@ -49,12 +49,11 @@ func viewsRouter() *gin.Engine {
 
 // registerViewsBackend creates a backend + user mapping for the single user in
 // the DB (created by the test BeforeEach).
-func registerViewsBackend(name, url, prefix, backendUserID string) {
+func registerViewsBackend(name, url, jellyfinServerID, backendUserID string) {
 	b, err := db.Backend.Create().
 		SetName(name).
 		SetURL(url).
-		SetJellyfinServerID("srv-" + prefix).
-		SetPrefix(prefix).
+		SetJellyfinServerID(jellyfinServerID).
 		Save(mediaCtx())
 	Expect(err).NotTo(HaveOccurred())
 
@@ -111,7 +110,7 @@ var _ = Describe("Merged library views", func() {
 
 				var item map[string]interface{}
 				Expect(json.Unmarshal(resp.Items[0], &item)).To(Succeed())
-				Expect(item["Id"]).To(Equal("merged_movies"))
+				Expect(item["Id"]).To(Equal(idtrans.EncodeMerged("movies")))
 				Expect(item["CollectionType"]).To(Equal("movies"))
 			})
 		})
@@ -171,23 +170,23 @@ var _ = Describe("Merged library views", func() {
 	Describe("GetItem", func() {
 		Context("when the item ID is a merged virtual ID", func() {
 			It("returns a synthetic CollectionFolder", func() {
-				w := doGet(router, "/items/merged_movies", auth())
+				w := doGet(router, "/items/"+idtrans.EncodeMerged("movies"), auth())
 
 				Expect(w.Code).To(Equal(http.StatusOK))
 				var resp map[string]interface{}
 				Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
-				Expect(resp["Id"]).To(Equal("merged_movies"))
+				Expect(resp["Id"]).To(Equal(idtrans.EncodeMerged("movies")))
 				Expect(resp["Name"]).To(Equal("Movies"))
 				Expect(resp["Type"]).To(Equal("CollectionFolder"))
 				Expect(resp["CollectionType"]).To(Equal("movies"))
 				Expect(resp["IsFolder"]).To(BeTrue())
-				Expect(resp["ServerId"]).To(Equal("test-server-id"))
+				Expect(resp["ServerId"]).To(Equal("testserverid"))
 			})
 		})
 
 		Context("with merged_tvshows", func() {
 			It("returns the correct display name", func() {
-				w := doGet(router, "/items/merged_tvshows", auth())
+				w := doGet(router, "/items/"+idtrans.EncodeMerged("tvshows"), auth())
 
 				Expect(w.Code).To(Equal(http.StatusOK))
 				var resp map[string]interface{}
@@ -229,23 +228,23 @@ var _ = Describe("Merged library views", func() {
 	Describe("GetUserItem", func() {
 		Context("when the item ID is a merged virtual ID", func() {
 			It("returns a synthetic CollectionFolder", func() {
-				w := doGet(router, "/users/ignored/items/merged_movies", auth())
+				w := doGet(router, "/users/ignored/items/"+idtrans.EncodeMerged("movies"), auth())
 
 				Expect(w.Code).To(Equal(http.StatusOK))
 				var resp map[string]interface{}
 				Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
-				Expect(resp["Id"]).To(Equal("merged_movies"))
+				Expect(resp["Id"]).To(Equal(idtrans.EncodeMerged("movies")))
 				Expect(resp["Name"]).To(Equal("Movies"))
 				Expect(resp["Type"]).To(Equal("CollectionFolder"))
 				Expect(resp["CollectionType"]).To(Equal("movies"))
 				Expect(resp["IsFolder"]).To(BeTrue())
-				Expect(resp["ServerId"]).To(Equal("test-server-id"))
+				Expect(resp["ServerId"]).To(Equal("testserverid"))
 			})
 		})
 
 		Context("with merged_tvshows", func() {
 			It("returns the correct display name", func() {
-				w := doGet(router, "/users/ignored/items/merged_tvshows", auth())
+				w := doGet(router, "/users/ignored/items/"+idtrans.EncodeMerged("tvshows"), auth())
 
 				Expect(w.Code).To(Equal(http.StatusOK))
 				var resp map[string]interface{}
@@ -280,7 +279,7 @@ var _ = Describe("Merged library views", func() {
 				registerViewsBackend("Backend A", fakeA.URL, "ba", "user-ba")
 				registerViewsBackend("Backend B", fakeB.URL, "bb", "user-bb")
 
-				w := doGet(router, "/items?parentId=merged_movies", auth())
+				w := doGet(router, "/items?parentId="+idtrans.EncodeMerged("movies"), auth())
 
 				Expect(w.Code).To(Equal(http.StatusOK))
 				var resp map[string]interface{}
@@ -364,7 +363,7 @@ var _ = Describe("Merged library views", func() {
 				registerViewsBackend("Backend A", fakeA.URL, "ba", "user-ba")
 				registerViewsBackend("Backend B", fakeB.URL, "bb", "user-bb")
 
-				w := doGet(router, "/users/ignored/items?parentId=merged_movies", auth())
+				w := doGet(router, "/users/ignored/items?parentId="+idtrans.EncodeMerged("movies"), auth())
 
 				Expect(w.Code).To(Equal(http.StatusOK))
 				var resp map[string]interface{}
@@ -405,7 +404,7 @@ var _ = Describe("Merged library views", func() {
 				registerViewsBackend("Backend A", fakeA.URL, "ba", "user-ba")
 				registerViewsBackend("Backend B", fakeB.URL, "bb", "user-bb")
 
-				w := doGet(router, "/users/ignored/items/latest?parentId=merged_movies", auth())
+				w := doGet(router, "/users/ignored/items/latest?parentId="+idtrans.EncodeMerged("movies"), auth())
 
 				Expect(w.Code).To(Equal(http.StatusOK))
 				var items []interface{}
@@ -478,7 +477,7 @@ var _ = Describe("Merged library views", func() {
 				registerViewsBackend("Backend A", fakeA.URL, "ba", "user-ba")
 				registerViewsBackend("Backend B", fakeB.URL, "bb", "user-bb")
 
-				w := doGet(router, "/items/filters2?parentId=merged_movies", auth())
+				w := doGet(router, "/items/filters2?parentId="+idtrans.EncodeMerged("movies"), auth())
 
 				Expect(w.Code).To(Equal(http.StatusOK))
 				var resp struct {
@@ -569,7 +568,7 @@ var _ = Describe("Merged library views", func() {
 				registerViewsBackend("Good", fakeOK.URL, "ok", "user-ok")
 				registerViewsBackend("Bad", fakeBad.URL, "bd", "user-bd")
 
-				w := doGet(router, "/items/filters2?parentId=merged_movies", auth())
+				w := doGet(router, "/items/filters2?parentId="+idtrans.EncodeMerged("movies"), auth())
 
 				Expect(w.Code).To(Equal(http.StatusOK))
 				var resp struct {
@@ -655,15 +654,15 @@ var _ = Describe("Merged library views", func() {
 	Describe("collectionTypes mapping (integration)", func() {
 		It("returns correct display names for all known collection types", func() {
 			types := map[string]string{
-				"merged_movies":      "Movies",
-				"merged_tvshows":     "TV Shows",
-				"merged_music":       "Music",
-				"merged_books":       "Books",
-				"merged_boxsets":     "Collections",
-				"merged_musicvideos": "Music Videos",
-				"merged_photos":      "Photos",
-				"merged_homevideos":  "Home Videos",
-				"merged_livetv":      "Live TV",
+				idtrans.EncodeMerged("movies"):      "Movies",
+				idtrans.EncodeMerged("tvshows"):     "TV Shows",
+				idtrans.EncodeMerged("music"):       "Music",
+				idtrans.EncodeMerged("books"):       "Books",
+				idtrans.EncodeMerged("boxsets"):     "Collections",
+				idtrans.EncodeMerged("musicvideos"): "Music Videos",
+				idtrans.EncodeMerged("photos"):      "Photos",
+				idtrans.EncodeMerged("homevideos"):  "Home Videos",
+				idtrans.EncodeMerged("livetv"):      "Live TV",
 			}
 
 			for mergedID, expectedName := range types {
@@ -676,7 +675,7 @@ var _ = Describe("Merged library views", func() {
 		})
 
 		It("title-cases unknown collection types", func() {
-			w := doGet(router, "/items/merged_podcasts", auth())
+			w := doGet(router, "/items/"+idtrans.EncodeMerged("podcasts"), auth())
 			Expect(w.Code).To(Equal(http.StatusOK))
 			var resp map[string]interface{}
 			Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
@@ -695,7 +694,7 @@ var _ = Describe("Merged library views", func() {
 
 			registerViewsBackend("Backend A", fake.URL, "ba", "user-ba")
 
-			w := doGet(router, "/items?parentId=merged_movies", auth())
+			w := doGet(router, "/items?parentId="+idtrans.EncodeMerged("movies"), auth())
 			Expect(w.Code).To(Equal(http.StatusOK))
 			Expect(called).To(BeTrue())
 		})
@@ -711,7 +710,7 @@ var _ = Describe("Merged library views", func() {
 
 			registerViewsBackend("Backend A", fake.URL, "ba", "user-ba")
 
-			doGet(router, "/items?parentId=merged_tvshows", auth())
+			doGet(router, "/items?parentId="+idtrans.EncodeMerged("tvshows"), auth())
 			Expect(gotItemType).To(Equal("series"))
 		})
 
@@ -726,7 +725,7 @@ var _ = Describe("Merged library views", func() {
 
 			registerViewsBackend("Backend A", fake.URL, "ba", "user-ba")
 
-			doGet(router, "/items?parentId=merged_music", auth())
+			doGet(router, "/items?parentId="+idtrans.EncodeMerged("music"), auth())
 			Expect(gotItemType).To(Equal("musicalbum"))
 		})
 	})

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
+	"strings"
 	"sync"
 
 	"github.com/ddevcap/jellyfin-proxy/backend"
@@ -19,8 +20,8 @@ import (
 // SearchTerm is present without a ParentId; returns empty list otherwise.
 // When ParentId is a merged virtual ID, fans out to all backends.
 func (h *MediaHandler) GetItems(c *gin.Context) {
-	prefix := prefixFromQuery(c)
-	if prefix == "" {
+	serverID := serverIDFromQuery(c)
+	if serverID == "" {
 		// No parentId/ids — fan out if this is a search request.
 		if queryParam(c, "searchterm") == "" {
 			c.JSON(http.StatusOK, emptyPagedList())
@@ -32,7 +33,7 @@ func (h *MediaHandler) GetItems(c *gin.Context) {
 		return
 	}
 
-	if collectionType, ok := idtrans.DecodeMerged(prefix); ok {
+	if collectionType, ok := idtrans.DecodeMerged(serverID); ok {
 		h.aggregatePagedItems(c, "/items", func(sc *backend.ServerClient) url.Values {
 			q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 			q.Del("ParentId")
@@ -43,7 +44,7 @@ func (h *MediaHandler) GetItems(c *gin.Context) {
 		return
 	}
 
-	sc, err := h.pool.ForUser(c.Request.Context(), prefix, userFromCtx(c))
+	sc, err := h.pool.ForUser(c.Request.Context(), serverID, userFromCtx(c))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "server not found"})
 		return
@@ -67,7 +68,7 @@ func (h *MediaHandler) GetItem(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"Id":             itemID,
 			"Name":           mergedDisplayName(collectionType),
-			"ServerId":       h.cfg.ServerID,
+			"ServerId":       strings.ReplaceAll(h.cfg.ServerID, "-", ""),
 			"Type":           "CollectionFolder",
 			"CollectionType": collectionType,
 			"IsFolder":       true,
@@ -124,13 +125,13 @@ func (h *MediaHandler) GetUserItems(c *gin.Context) {
 		return
 	}
 
-	prefix, _, err := idtrans.Decode(parentID)
+	serverID, _, err := idtrans.Decode(parentID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid parentid"})
 		return
 	}
 
-	sc, err := h.pool.ForUser(c.Request.Context(), prefix, userFromCtx(c))
+	sc, err := h.pool.ForUser(c.Request.Context(), serverID, userFromCtx(c))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "server not found"})
 		return
@@ -200,17 +201,59 @@ func (h *MediaHandler) GetLatestItems(c *gin.Context) {
 	}
 
 	if parentID == "" {
-		c.JSON(http.StatusOK, []interface{}{})
+		// No parentId — fan out to all backends (Android TV calls
+		// GET /Items/Latest with includeItemTypes but no parentId).
+		user := userFromCtx(c)
+		clients, err := h.pool.AllForUser(c.Request.Context(), user)
+		if err != nil || len(clients) == 0 {
+			c.JSON(http.StatusOK, []interface{}{})
+			return
+		}
+		type result struct {
+			items []json.RawMessage
+		}
+		results := make([]result, len(clients))
+		var wg sync.WaitGroup
+		for i, sc := range clients {
+			wg.Add(1)
+			go func(i int, sc *backend.ServerClient) {
+				defer wg.Done()
+				ctx, cancel := context.WithTimeout(c.Request.Context(), fanOutTimeout)
+				defer cancel()
+				q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+				body, status, err := sc.ProxyJSON(ctx, "GET",
+					"/users/"+sc.BackendUserID()+"/items/Latest", q, nil)
+				if err != nil || status != http.StatusOK {
+					return
+				}
+				var items []json.RawMessage
+				if err := json.Unmarshal(body, &items); err != nil {
+					return
+				}
+				results[i] = result{items: items}
+			}(i, sc)
+		}
+		wg.Wait()
+
+		var allItems []json.RawMessage
+		for _, r := range results {
+			allItems = append(allItems, r.items...)
+		}
+		if allItems == nil {
+			allItems = []json.RawMessage{}
+		}
+		sortByDateCreated(allItems)
+		c.JSON(http.StatusOK, allItems)
 		return
 	}
 
-	prefix, _, err := idtrans.Decode(parentID)
+	serverID, _, err := idtrans.Decode(parentID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid parentid"})
 		return
 	}
 
-	sc, err := h.pool.ForUser(c.Request.Context(), prefix, userFromCtx(c))
+	sc, err := h.pool.ForUser(c.Request.Context(), serverID, userFromCtx(c))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "server not found"})
 		return
@@ -237,7 +280,7 @@ func (h *MediaHandler) GetUserItem(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"Id":             itemID,
 			"Name":           mergedDisplayName(collectionType),
-			"ServerId":       h.cfg.ServerID,
+			"ServerId":       strings.ReplaceAll(h.cfg.ServerID, "-", ""),
 			"Type":           "CollectionFolder",
 			"CollectionType": collectionType,
 			"IsFolder":       true,
@@ -465,8 +508,8 @@ func (h *MediaHandler) GetIntros(c *gin.Context) {
 // GetQueryFilters handles GET /Items/Filters2 and GET /Items/Filters.
 // Routes to the backend identified by ParentId; returns empty filters if absent.
 func (h *MediaHandler) GetQueryFilters(c *gin.Context) {
-	prefix := prefixFromQuery(c)
-	if prefix == "" {
+	serverID := serverIDFromQuery(c)
+	if serverID == "" {
 		c.JSON(http.StatusOK, gin.H{
 			"Genres":          []interface{}{},
 			"Tags":            []interface{}{},
@@ -477,12 +520,12 @@ func (h *MediaHandler) GetQueryFilters(c *gin.Context) {
 	}
 
 	// Merged virtual library — fan out to all backends and merge filters.
-	if collectionType, ok := idtrans.DecodeMerged(prefix); ok {
+	if collectionType, ok := idtrans.DecodeMerged(serverID); ok {
 		h.aggregateFilters(c, collectionType)
 		return
 	}
 
-	sc, err := h.pool.ForUser(c.Request.Context(), prefix, userFromCtx(c))
+	sc, err := h.pool.ForUser(c.Request.Context(), serverID, userFromCtx(c))
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "server not found"})
 		return

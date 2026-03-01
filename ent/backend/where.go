@@ -71,11 +71,6 @@ func JellyfinServerID(v string) predicate.Backend {
 	return predicate.Backend(sql.FieldEQ(FieldJellyfinServerID, v))
 }
 
-// Prefix applies equality check predicate on the "prefix" field. It's identical to PrefixEQ.
-func Prefix(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldEQ(FieldPrefix, v))
-}
-
 // Enabled applies equality check predicate on the "enabled" field. It's identical to EnabledEQ.
 func Enabled(v bool) predicate.Backend {
 	return predicate.Backend(sql.FieldEQ(FieldEnabled, v))
@@ -279,71 +274,6 @@ func JellyfinServerIDEqualFold(v string) predicate.Backend {
 // JellyfinServerIDContainsFold applies the ContainsFold predicate on the "jellyfin_server_id" field.
 func JellyfinServerIDContainsFold(v string) predicate.Backend {
 	return predicate.Backend(sql.FieldContainsFold(FieldJellyfinServerID, v))
-}
-
-// PrefixEQ applies the EQ predicate on the "prefix" field.
-func PrefixEQ(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldEQ(FieldPrefix, v))
-}
-
-// PrefixNEQ applies the NEQ predicate on the "prefix" field.
-func PrefixNEQ(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldNEQ(FieldPrefix, v))
-}
-
-// PrefixIn applies the In predicate on the "prefix" field.
-func PrefixIn(vs ...string) predicate.Backend {
-	return predicate.Backend(sql.FieldIn(FieldPrefix, vs...))
-}
-
-// PrefixNotIn applies the NotIn predicate on the "prefix" field.
-func PrefixNotIn(vs ...string) predicate.Backend {
-	return predicate.Backend(sql.FieldNotIn(FieldPrefix, vs...))
-}
-
-// PrefixGT applies the GT predicate on the "prefix" field.
-func PrefixGT(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldGT(FieldPrefix, v))
-}
-
-// PrefixGTE applies the GTE predicate on the "prefix" field.
-func PrefixGTE(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldGTE(FieldPrefix, v))
-}
-
-// PrefixLT applies the LT predicate on the "prefix" field.
-func PrefixLT(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldLT(FieldPrefix, v))
-}
-
-// PrefixLTE applies the LTE predicate on the "prefix" field.
-func PrefixLTE(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldLTE(FieldPrefix, v))
-}
-
-// PrefixContains applies the Contains predicate on the "prefix" field.
-func PrefixContains(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldContains(FieldPrefix, v))
-}
-
-// PrefixHasPrefix applies the HasPrefix predicate on the "prefix" field.
-func PrefixHasPrefix(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldHasPrefix(FieldPrefix, v))
-}
-
-// PrefixHasSuffix applies the HasSuffix predicate on the "prefix" field.
-func PrefixHasSuffix(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldHasSuffix(FieldPrefix, v))
-}
-
-// PrefixEqualFold applies the EqualFold predicate on the "prefix" field.
-func PrefixEqualFold(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldEqualFold(FieldPrefix, v))
-}
-
-// PrefixContainsFold applies the ContainsFold predicate on the "prefix" field.
-func PrefixContainsFold(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldContainsFold(FieldPrefix, v))
 }
 
 // EnabledEQ applies the EQ predicate on the "enabled" field.

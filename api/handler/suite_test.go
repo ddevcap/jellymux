@@ -16,6 +16,7 @@ import (
 
 	"github.com/ddevcap/jellyfin-proxy/ent"
 	"github.com/ddevcap/jellyfin-proxy/ent/enttest"
+	"github.com/ddevcap/jellyfin-proxy/idtrans"
 	_ "modernc.org/sqlite"
 )
 
@@ -43,6 +44,7 @@ func TestHandlers(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	idtrans.PrewarmMerged()
 	// file: URI — named in-process SQLite database.
 	// cache=shared lets multiple connections in the same process share it.
 	// _fk=1 enables foreign-key enforcement, matching production Postgres behaviour.
@@ -84,13 +86,12 @@ func createUser(username, password string, isAdmin bool) *ent.User {
 	return u
 }
 
-// createBackend inserts a backend with a unique prefix and jellyfin_server_id.
-func createBackend(name, url, prefix string) *ent.Backend {
+// createBackend inserts a backend with a unique jellyfin_server_id.
+func createBackend(name, url, jellyfinServerID string) *ent.Backend {
 	b, err := db.Backend.Create().
 		SetName(name).
 		SetURL(url).
-		SetJellyfinServerID("srv-" + prefix).
-		SetPrefix(prefix).
+		SetJellyfinServerID(jellyfinServerID).
 		Save(context.Background())
 	Expect(err).NotTo(HaveOccurred())
 	return b

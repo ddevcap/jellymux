@@ -42,7 +42,7 @@ var _ = Describe("SystemHandler", func() {
 			Expect(w.Code).To(Equal(http.StatusOK))
 			var body map[string]interface{}
 			Expect(json.Unmarshal(w.Body.Bytes(), &body)).To(Succeed())
-			Expect(body["Id"]).To(Equal("test-server-id"))
+			Expect(body["Id"]).To(Equal("testserverid"))
 			Expect(body["ServerName"]).To(Equal("Test Proxy"))
 			Expect(body["LocalAddress"]).To(Equal("https://example.com"))
 			Expect(body["StartupWizardCompleted"]).To(BeTrue())
@@ -56,7 +56,7 @@ var _ = Describe("SystemHandler", func() {
 			Expect(w.Code).To(Equal(http.StatusOK))
 			var body map[string]interface{}
 			Expect(json.Unmarshal(w.Body.Bytes(), &body)).To(Succeed())
-			Expect(body["Id"]).To(Equal("test-server-id"))
+			Expect(body["Id"]).To(Equal("testserverid"))
 			Expect(body["CanSelfRestart"]).To(BeFalse())
 			Expect(body["SupportsLibraryMonitor"]).To(BeFalse())
 		})

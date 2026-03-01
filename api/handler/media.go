@@ -184,11 +184,11 @@ func canonicalKey(k string) string {
 // the authenticated user's credentials, and returns both the client and the
 // raw backend item ID.
 func (h *MediaHandler) routeByID(c *gin.Context, proxyID string) (*backend.ServerClient, string, error) {
-	prefix, backendID, err := idtrans.Decode(proxyID)
+	serverID, backendID, err := idtrans.Decode(proxyID)
 	if err != nil {
 		return nil, "", err
 	}
-	sc, err := h.pool.ForUser(c.Request.Context(), prefix, userFromCtx(c))
+	sc, err := h.pool.ForUser(c.Request.Context(), serverID, userFromCtx(c))
 	if err != nil {
 		return nil, "", err
 	}
@@ -200,16 +200,16 @@ func (h *MediaHandler) routeByID(c *gin.Context, proxyID string) (*backend.Serve
 // (streaming, images) where the video player may fetch resources without
 // sending auth headers.
 func (h *MediaHandler) routeByIDPublic(c *gin.Context, proxyID string) (*backend.ServerClient, string, error) {
-	prefix, backendID, err := idtrans.Decode(proxyID)
+	serverID, backendID, err := idtrans.Decode(proxyID)
 	if err != nil {
 		return nil, "", err
 	}
 	user := h.tryResolveUser(c)
 	var sc *backend.ServerClient
 	if user != nil {
-		sc, err = h.pool.ForUser(c.Request.Context(), prefix, user)
+		sc, err = h.pool.ForUser(c.Request.Context(), serverID, user)
 	} else {
-		sc, err = h.pool.ForBackend(c.Request.Context(), prefix)
+		sc, err = h.pool.ForBackend(c.Request.Context(), serverID)
 	}
 	if err != nil {
 		return nil, "", err
@@ -231,24 +231,24 @@ func queryParam(c *gin.Context, name string) string {
 	return ""
 }
 
-// prefixFromQuery extracts the server prefix (or full merged virtual ID) from
-// the parentid or ids query param (case-insensitive).
+// serverIDFromQuery extracts the backend server ID (or full merged virtual ID)
+// from the parentid or ids query param (case-insensitive).
 // Returns the full ID string when it is a merged virtual ID.
-func prefixFromQuery(c *gin.Context) string {
+func serverIDFromQuery(c *gin.Context) string {
 	if pid := queryParam(c, "parentid"); pid != "" {
 		if _, ok := idtrans.DecodeMerged(pid); ok {
 			return pid
 		}
-		prefix, _, _ := idtrans.Decode(pid)
-		return prefix
+		serverID, _, _ := idtrans.Decode(pid)
+		return serverID
 	}
 	if ids := queryParam(c, "ids"); ids != "" {
 		first := strings.TrimSpace(strings.SplitN(ids, ",", 2)[0])
 		if _, ok := idtrans.DecodeMerged(first); ok {
 			return first
 		}
-		prefix, _, _ := idtrans.Decode(first)
-		return prefix
+		serverID, _, _ := idtrans.Decode(first)
+		return serverID
 	}
 	return ""
 }
@@ -432,40 +432,49 @@ func injectProxyToken(body []byte, token string) []byte {
 // response (AuthenticateByName) and the user-object endpoints.
 func buildUserPolicy(isAdmin bool, directStream bool, cfg config.Config) gin.H {
 	return gin.H{
-		"IsAdministrator":                 isAdmin,
-		"IsHidden":                        false,
-		"IsDisabled":                      false,
-		"DirectStream":                    directStream,
-		"EnableRemoteControlOfOtherUsers": isAdmin,
-		"EnableSharedDeviceControl":       false,
-		"EnableRemoteAccess":              true,
-		"EnableLiveTvManagement":          false,
-		"EnableLiveTvAccess":              true,
-		"EnableMediaPlayback":             true,
-		"EnableAudioPlaybackTranscoding":  true,
-		"EnableVideoPlaybackTranscoding":  true,
-		"EnablePlaybackRemuxing":          true,
-		"EnableContentDeletion":           isAdmin,
-		"EnableContentDownloading":        true,
-		"EnableSubtitleDownloading":       true,
-		"EnableSubtitleManagement":        false,
-		"EnableSyncTranscoding":           true,
-		"EnableManagedContentEditing":     false,
-		"EnabledDevices":                  []string{},
-		"EnableAllDevices":                true,
-		"EnabledChannels":                 []string{},
-		"EnableAllChannels":               true,
-		"EnabledFolders":                  []string{},
-		"EnableAllFolders":                true,
-		"InvalidLoginAttemptCount":        0,
-		"EnablePublicSharing":             false,
-		"BlockedMediaFolders":             []string{},
-		"BlockedChannels":                 []string{},
-		"RemoteClientBitrateLimit":        cfg.BitrateLimit,
-		"AuthenticationProviderId":        "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
-		"PasswordResetProviderId":         "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
-		"SyncPlayAccess":                  "CreateAndJoinGroups",
-		"ManagementFeatures":              []interface{}{},
+		"IsAdministrator":                  isAdmin,
+		"IsHidden":                         !isAdmin,
+		"EnableCollectionManagement":       false,
+		"EnableSubtitleManagement":         false,
+		"EnableLyricManagement":            false,
+		"IsDisabled":                       false,
+		"DirectStream":                     directStream,
+		"BlockedTags":                      []string{},
+		"AllowedTags":                      []string{},
+		"EnableUserPreferenceAccess":       true,
+		"AccessSchedules":                  []interface{}{},
+		"BlockUnratedItems":                []interface{}{},
+		"EnableRemoteControlOfOtherUsers":  isAdmin,
+		"EnableSharedDeviceControl":        isAdmin,
+		"EnableRemoteAccess":               true,
+		"EnableLiveTvManagement":           isAdmin,
+		"EnableLiveTvAccess":               true,
+		"EnableMediaPlayback":              true,
+		"EnableAudioPlaybackTranscoding":   true,
+		"EnableVideoPlaybackTranscoding":   true,
+		"EnablePlaybackRemuxing":           true,
+		"ForceRemoteSourceTranscoding":     false,
+		"EnableContentDeletion":            isAdmin,
+		"EnableContentDeletionFromFolders": []string{},
+		"EnableContentDownloading":         true,
+		"EnableSyncTranscoding":            true,
+		"EnableMediaConversion":            false,
+		"EnabledDevices":                   []string{},
+		"EnableAllDevices":                 true,
+		"EnabledChannels":                  []string{},
+		"EnableAllChannels":                true,
+		"EnabledFolders":                   []string{},
+		"EnableAllFolders":                 true,
+		"InvalidLoginAttemptCount":         0,
+		"LoginAttemptsBeforeLockout":       -1,
+		"MaxActiveSessions":                0,
+		"EnablePublicSharing":              false,
+		"BlockedMediaFolders":              []string{},
+		"BlockedChannels":                  []string{},
+		"RemoteClientBitrateLimit":         cfg.BitrateLimit,
+		"AuthenticationProviderId":         "Jellyfin.Server.Implementations.Users.DefaultAuthenticationProvider",
+		"PasswordResetProviderId":          "Jellyfin.Server.Implementations.Users.DefaultPasswordResetProvider",
+		"SyncPlayAccess":                   "CreateAndJoinGroups",
 	}
 }
 
@@ -473,27 +482,28 @@ func buildUserPolicy(isAdmin bool, directStream bool, cfg config.Config) gin.H {
 func buildUserObject(user *ent.User, cfg config.Config) gin.H {
 	obj := gin.H{
 		"Name":                      user.Username,
-		"ServerId":                  cfg.ServerID,
-		"ServerName":                cfg.ServerName,
-		"Id":                        user.ID,
+		"ServerId":                  strings.ReplaceAll(cfg.ServerID, "-", ""),
+		"Id":                        jellyfinID(user.ID),
 		"HasPassword":               true,
 		"HasConfiguredPassword":     true,
 		"HasConfiguredEasyPassword": false,
 		"EnableAutoLogin":           false,
 		"Configuration": gin.H{
 			"PlayDefaultAudioTrack":      true,
+			"SubtitleLanguagePreference": "",
+			"DisplayMissingEpisodes":     false,
+			"GroupedFolders":             []interface{}{},
+			"SubtitleMode":               "Default",
+			"DisplayCollectionsView":     false,
+			"EnableLocalPassword":        false,
+			"OrderedViews":               []interface{}{},
+			"LatestItemsExcludes":        []interface{}{},
+			"MyMediaExcludes":            []interface{}{},
+			"HidePlayedInLatest":         true,
 			"RememberAudioSelections":    true,
 			"RememberSubtitleSelections": true,
 			"EnableNextEpisodeAutoPlay":  true,
-			"SubtitleMode":               "Default",
-			"DisplayCollectionsView":     false,
-			"DisplayMissingEpisodes":     false,
-			"EnableLocalPassword":        false,
-			"HidePlayedInLatest":         true,
-			"GroupedFolders":             []interface{}{},
-			"MyMediaExcludes":            []interface{}{},
-			"LatestItemsExcludes":        []interface{}{},
-			"OrderedViews":               []interface{}{},
+			"CastReceiverId":             "F007D354",
 		},
 		"Policy": buildUserPolicy(user.IsAdmin, user.DirectStream, cfg),
 	}

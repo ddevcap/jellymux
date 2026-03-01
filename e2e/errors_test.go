@@ -16,7 +16,7 @@ var _ = Describe("Error handling & edge cases", func() {
 			endpoints := []string{
 				"/system/info",
 				"/users/" + testUser.ID + "/views",
-				"/items?parentId=merged_movies",
+				"/items?parentId=" + idtrans.EncodeMerged("movies"),
 				"/items/counts",
 			}
 
@@ -36,13 +36,13 @@ var _ = Describe("Error handling & edge cases", func() {
 	})
 
 	Describe("Invalid item IDs", func() {
-		It("returns 400 for item ID without a prefix separator", func() {
+		It("returns 400 for unknown item ID", func() {
 			resp := get(proxyURL("/items/noprefixhere"), userToken)
 			resp.Body.Close()
 			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 		})
 
-		It("returns an error for non-existent backend prefix", func() {
+		It("returns an error for non-existent backend (legacy prefix format)", func() {
 			resp := get(proxyURL("/items/zz_nonexistent123"), userToken)
 			resp.Body.Close()
 			Expect(resp.StatusCode).To(SatisfyAny(
@@ -51,7 +51,7 @@ var _ = Describe("Error handling & edge cases", func() {
 			))
 		})
 
-		It("returns 400 for download with unprefixed ID", func() {
+		It("returns 400 for download with unknown ID", func() {
 			resp := get(proxyURL("/items/badid/download?api_key="+userToken), "")
 			resp.Body.Close()
 			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
@@ -148,4 +148,3 @@ var _ = Describe("Error handling & edge cases", func() {
 		})
 	})
 })
-

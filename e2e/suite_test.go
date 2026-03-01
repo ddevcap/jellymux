@@ -20,6 +20,8 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/ddevcap/jellyfin-proxy/idtrans"
 )
 
 // ── Configurable addresses ────────────────────────────────────────────────────
@@ -63,6 +65,8 @@ func TestE2E(t *testing.T) {
 }
 
 var _ = BeforeSuite(func() {
+	idtrans.PrewarmMerged()
+
 	By("Setting up Jellyfin server 1")
 	setupJellyfin(jellyfinServer1Direct)
 
@@ -80,10 +84,10 @@ var _ = BeforeSuite(func() {
 	adminUser = getCurrentUser(adminToken)
 
 	By("Registering backend server 1")
-	backend1ID = registerBackend("Server 1", jellyfinServer1, "s1")
+	backend1ID = registerBackend("Server 1", jellyfinServer1)
 
 	By("Registering backend server 2")
-	backend2ID = registerBackend("Server 2", jellyfinServer2, "s2")
+	backend2ID = registerBackend("Server 2", jellyfinServer2)
 
 	By("Creating a test user")
 	testUser = createProxyUser("e2euser", "e2e-test-password!")
@@ -149,11 +153,10 @@ func getCurrentUser(token string) userInfo {
 	}
 }
 
-func registerBackend(name, url, prefix string) string {
+func registerBackend(name, url string) string {
 	resp := post(proxyBase+"/proxy/backends", map[string]interface{}{
-		"name":   name,
-		"url":    url,
-		"prefix": prefix,
+		"name": name,
+		"url":  url,
 	}, adminToken)
 	defer resp.Body.Close()
 	ExpectWithOffset(1, resp.StatusCode).To(
@@ -161,17 +164,17 @@ func registerBackend(name, url, prefix string) string {
 		fmt.Sprintf("register backend %s failed: status %d", name, resp.StatusCode))
 
 	if resp.StatusCode == http.StatusConflict {
-		// Backend already registered — find it.
+		// Backend already registered — find it by name.
 		list := get(proxyBase+"/proxy/backends", adminToken)
 		defer list.Body.Close()
 		var backends []map[string]interface{}
 		Expect(json.NewDecoder(list.Body).Decode(&backends)).To(Succeed())
 		for _, b := range backends {
-			if b["prefix"].(string) == prefix {
+			if b["name"].(string) == name {
 				return b["id"].(string)
 			}
 		}
-		Fail(fmt.Sprintf("backend with prefix %s not found after conflict", prefix))
+		Fail(fmt.Sprintf("backend %s not found after conflict", name))
 	}
 
 	var body map[string]interface{}

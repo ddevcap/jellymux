@@ -14,7 +14,6 @@ var (
 		{Name: "name", Type: field.TypeString},
 		{Name: "url", Type: field.TypeString},
 		{Name: "jellyfin_server_id", Type: field.TypeString, Unique: true},
-		{Name: "prefix", Type: field.TypeString, Unique: true, Size: 8},
 		{Name: "enabled", Type: field.TypeBool, Default: true},
 		{Name: "created_at", Type: field.TypeTime},
 	}

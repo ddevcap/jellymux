@@ -10,13 +10,15 @@ import (
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/ddevcap/jellyfin-proxy/idtrans"
 )
 
 var _ = Describe("Playback", func() {
 
-	// getFirstMovieID fetches all merged movies and returns the first proxy-prefixed item ID.
+	// getFirstMovieID fetches all merged movies and returns the first proxy item ID.
 	getFirstMovieID := func() string {
-		resp := get(proxyURL("/items?parentId=merged_movies"), userToken)
+		resp := get(proxyURL("/items?parentId="+idtrans.EncodeMerged("movies")), userToken)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		items, _ := pagedItems(resp)
 		Expect(items).NotTo(BeEmpty(), "need at least 1 movie for playback tests")
@@ -24,7 +26,7 @@ var _ = Describe("Playback", func() {
 	}
 
 	Describe("GET /Items/:id/PlaybackInfo", func() {
-		It("returns rewritten MediaSources with proxy-prefixed IDs", func() {
+		It("returns rewritten MediaSources with proxy IDs", func() {
 			movieID := getFirstMovieID()
 
 			resp := get(proxyURL(fmt.Sprintf("/items/%s/playbackinfo", movieID)), userToken)

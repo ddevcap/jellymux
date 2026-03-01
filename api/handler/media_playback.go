@@ -45,7 +45,7 @@ func (h *MediaHandler) GetPlaybackInfo(c *gin.Context) {
 	// - replace backend host with proxy ExternalURL
 	// - replace bare item IDs (hex + UUID form) with proxy-prefixed IDs
 	// - strip backend ApiKey (proxy handles auth)
-	proxyID := idtrans.Encode(sc.Prefix(), backendID)
+	proxyID := idtrans.Encode(sc.JellyfinServerID(), backendID)
 	respBody = rewritePlaybackInfoURLs(respBody, backendID, proxyID, sc.ServerURL(), h.cfg.ExternalURL)
 
 	// Inject the proxy session token into streaming URLs. Browsers' <video>
@@ -64,7 +64,7 @@ func (h *MediaHandler) GetPlaybackInfo(c *gin.Context) {
 // A single handler covers both routes; imageIndex is "" when not present.
 func (h *MediaHandler) GetImage(c *gin.Context) {
 	proxyID := c.Param("itemId")
-	prefix, backendID, err := idtrans.Decode(proxyID)
+	serverID, backendID, err := idtrans.Decode(proxyID)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -75,9 +75,9 @@ func (h *MediaHandler) GetImage(c *gin.Context) {
 	var sc *backend.ServerClient
 	user := h.tryResolveUser(c)
 	if user != nil {
-		sc, err = h.pool.ForUser(c.Request.Context(), prefix, user)
+		sc, err = h.pool.ForUser(c.Request.Context(), serverID, user)
 	} else {
-		sc, err = h.pool.ForBackend(c.Request.Context(), prefix)
+		sc, err = h.pool.ForBackend(c.Request.Context(), serverID)
 	}
 	if err != nil {
 		c.JSON(http.StatusNotFound, gin.H{"error": "server not found"})
@@ -462,13 +462,13 @@ func (h *MediaHandler) forwardPlaybackReport(c *gin.Context, endpoint string) {
 		return
 	}
 
-	prefix, _, err := idtrans.Decode(payload.ItemId)
+	serverID, _, err := idtrans.Decode(payload.ItemId)
 	if err != nil {
 		c.Status(http.StatusNoContent)
 		return
 	}
 
-	sc, err := h.pool.ForUser(c.Request.Context(), prefix, userFromCtx(c))
+	sc, err := h.pool.ForUser(c.Request.Context(), serverID, userFromCtx(c))
 	if err != nil {
 		c.Status(http.StatusNoContent)
 		return

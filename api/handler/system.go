@@ -2,8 +2,10 @@ package handler
 
 import (
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/ddevcap/jellyfin-proxy/backend"
 	"github.com/ddevcap/jellyfin-proxy/config"
@@ -36,7 +38,7 @@ func (h *SystemHandler) InfoPublic(c *gin.Context) {
 		"Version":                jellyfinVersion,
 		"ProductName":            "Jellyfin Server",
 		"OperatingSystem":        "Linux",
-		"Id":                     h.cfg.ServerID,
+		"Id":                     strings.ReplaceAll(h.cfg.ServerID, "-", ""),
 		"StartupWizardCompleted": true,
 	})
 }
@@ -52,7 +54,7 @@ func (h *SystemHandler) Info(c *gin.Context) {
 		"Version":                jellyfinVersion,
 		"ProductName":            "Jellyfin Server",
 		"OperatingSystem":        "Linux",
-		"Id":                     h.cfg.ServerID,
+		"Id":                     strings.ReplaceAll(h.cfg.ServerID, "-", ""),
 		"StartupWizardCompleted": true,
 		"SupportsLibraryMonitor": false,
 		"CanSelfRestart":         false,
@@ -113,11 +115,36 @@ func (h *SystemHandler) QuickConnectEnabled(c *gin.Context) {
 	c.JSON(http.StatusOK, false)
 }
 
+// QuickConnectInitiate handles POST /QuickConnect/Initiate.
+// QuickConnect is not supported by the proxy — return 401 as a real
+// Jellyfin server does when QC is disabled.
+func (h *SystemHandler) QuickConnectInitiate(c *gin.Context) {
+	c.JSON(http.StatusUnauthorized, gin.H{"error": "Quick connect is not enabled on this server"})
+}
+
 // SessionCapabilitiesFull handles POST /Sessions/Capabilities/Full.
 // Clients call this after login to advertise what they can play/support.
 // We acknowledge the request and discard the body.
 func (h *SystemHandler) SessionCapabilitiesFull(c *gin.Context) {
 	c.Status(http.StatusNoContent)
+}
+
+// ClientLogDocument handles POST /ClientLog/Document.
+// Clients send log entries to the server for diagnostics. When the proxy
+// log level is set to debug the entries are logged, otherwise discarded.
+func (h *SystemHandler) ClientLogDocument(c *gin.Context) {
+	if slog.Default().Enabled(c.Request.Context(), slog.LevelDebug) {
+		body, _ := io.ReadAll(io.LimitReader(c.Request.Body, 64*1024))
+		if len(body) > 0 {
+			user := userFromCtx(c)
+			username := ""
+			if user != nil {
+				username = user.Username
+			}
+			slog.Debug("client log", "user", username, "body", string(body))
+		}
+	}
+	c.Status(http.StatusOK)
 }
 
 // DisplayPreferencesGet handles GET /DisplayPreferences/{id}.

@@ -43,31 +43,47 @@ func rewriteRequest(input obj) obj {
 // ── Encode ────────────────────────────────────────────────────────────────────
 
 var _ = Describe("Encode", func() {
-	It("prefixes the backendID with prefix and underscore", func() {
-		Expect(idtrans.Encode("s1", "abc123")).To(Equal("s1_abc123"))
+	It("returns a 32-char lowercase hex string (dashless UUID)", func() {
+		result := idtrans.Encode("s1", "abc123")
+		Expect(result).To(HaveLen(32))
+		Expect(result).To(MatchRegexp(`^[0-9a-f]{32}$`))
 	})
 
 	It("returns an empty string when backendID is empty", func() {
 		Expect(idtrans.Encode("s1", "")).To(BeEmpty())
+	})
+
+	It("produces different IDs for different servers with the same backendID", func() {
+		a := idtrans.Encode("server1", "abc123")
+		b := idtrans.Encode("server2", "abc123")
+		Expect(a).NotTo(Equal(b))
+	})
+
+	It("is deterministic (same inputs → same output)", func() {
+		a := idtrans.Encode("s1", "abc123")
+		b := idtrans.Encode("s1", "abc123")
+		Expect(a).To(Equal(b))
 	})
 })
 
 // ── Decode ────────────────────────────────────────────────────────────────────
 
 var _ = Describe("Decode", func() {
-	DescribeTable("correctly splits prefix and backendID",
-		func(proxyID, wantPrefix, wantBackendID string) {
-			prefix, backendID, err := idtrans.Decode(proxyID)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(prefix).To(Equal(wantPrefix))
-			Expect(backendID).To(Equal(wantBackendID))
-		},
-		Entry("simple alphanumeric ID", "s1_abc123", "s1", "abc123"),
-		Entry("UUID with hyphens as backendID", "s2_a1b2c3d4-e5f6-7890-abcd-ef1234567890", "s2", "a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
-		Entry("backendID that itself contains underscores", "s1_has_underscore", "s1", "has_underscore"),
-	)
+	Context("legacy prefix_backendID format", func() {
+		DescribeTable("correctly splits prefix and backendID",
+			func(proxyID, wantPrefix, wantBackendID string) {
+				prefix, backendID, err := idtrans.Decode(proxyID)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(prefix).To(Equal(wantPrefix))
+				Expect(backendID).To(Equal(wantBackendID))
+			},
+			Entry("simple alphanumeric ID", "s1_abc123", "s1", "abc123"),
+			Entry("UUID with hyphens as backendID", "s2_a1b2c3d4-e5f6-7890-abcd-ef1234567890", "s2", "a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+			Entry("backendID that itself contains underscores", "s1_has_underscore", "s1", "has_underscore"),
+		)
+	})
 
-	Context("when the ID has no underscore separator", func() {
+	Context("when the ID is not in cache and has no underscore", func() {
 		It("returns an error", func() {
 			_, _, err := idtrans.Decode("noprefixhere")
 			Expect(err).To(HaveOccurred())
@@ -80,11 +96,11 @@ var _ = Describe("Decode", func() {
 	})
 
 	It("round-trips with Encode", func() {
-		prefix, backendID := "s1", "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
-		encoded := idtrans.Encode(prefix, backendID)
-		gotPrefix, gotBackend, err := idtrans.Decode(encoded)
+		serverID, backendID := "server-abc", "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+		encoded := idtrans.Encode(serverID, backendID)
+		gotServer, gotBackend, err := idtrans.Decode(encoded)
 		Expect(err).NotTo(HaveOccurred())
-		Expect(gotPrefix).To(Equal(prefix))
+		Expect(gotServer).To(Equal(serverID))
 		Expect(gotBackend).To(Equal(backendID))
 	})
 })
@@ -93,7 +109,7 @@ var _ = Describe("Decode", func() {
 
 var _ = Describe("RewriteResponse", func() {
 	Context("top-level ID fields", func() {
-		It("prefixes Id and ParentId, replaces ServerId, leaves non-ID fields unchanged", func() {
+		It("encodes Id and ParentId as UUIDs, replaces ServerId, leaves non-ID fields unchanged", func() {
 			out := rewriteResponse(obj{
 				"Id":       "abc123",
 				"ParentId": "def456",
@@ -101,8 +117,8 @@ var _ = Describe("RewriteResponse", func() {
 				"Name":     "My Movie",
 			}, "s1", "proxy-server-id")
 
-			Expect(out["Id"]).To(Equal("s1_abc123"))
-			Expect(out["ParentId"]).To(Equal("s1_def456"))
+			Expect(out["Id"]).To(Equal(idtrans.Encode("s1", "abc123")))
+			Expect(out["ParentId"]).To(Equal(idtrans.Encode("s1", "def456")))
 			Expect(out["ServerId"]).To(Equal("proxy-server-id"))
 			Expect(out["Name"]).To(Equal("My Movie"))
 		})
@@ -118,13 +134,13 @@ var _ = Describe("RewriteResponse", func() {
 				},
 			}, "s1", "proxy-id")
 
-			Expect(out["Id"]).To(Equal("s1_parent"))
+			Expect(out["Id"]).To(Equal(idtrans.Encode("s1", "parent")))
 			items := out["Items"].([]interface{})
 			item0 := items[0].(obj)
 			item1 := items[1].(obj)
-			Expect(item0["Id"]).To(Equal("s1_child1"))
+			Expect(item0["Id"]).To(Equal(idtrans.Encode("s1", "child1")))
 			Expect(item0["ServerId"]).To(Equal("proxy-id"))
-			Expect(item1["Id"]).To(Equal("s1_child2"))
+			Expect(item1["Id"]).To(Equal(idtrans.Encode("s1", "child2")))
 			Expect(item1["ServerId"]).To(Equal("proxy-id"))
 		})
 	})
@@ -140,9 +156,9 @@ var _ = Describe("RewriteResponse", func() {
 				},
 			}, "s1", "proxy-id")
 
-			Expect(out["Id"]).To(Equal("s1_abc123"))
+			Expect(out["Id"]).To(Equal(idtrans.Encode("s1", "abc123")))
 			userData := out["UserData"].(obj)
-			Expect(userData["ItemId"]).To(Equal("s1_abc123"))
+			Expect(userData["ItemId"]).To(Equal(idtrans.Encode("s1", "abc123")))
 		})
 	})
 
@@ -155,9 +171,9 @@ var _ = Describe("RewriteResponse", func() {
 				},
 			}, "s1", "proxy-id")
 
-			Expect(out["Id"]).To(Equal("s1_album1"))
+			Expect(out["Id"]).To(Equal(idtrans.Encode("s1", "album1")))
 			artists := out["ArtistItems"].([]interface{})
-			Expect(artists[0].(obj)["Id"]).To(Equal("s1_artist1"))
+			Expect(artists[0].(obj)["Id"]).To(Equal(idtrans.Encode("s1", "artist1")))
 		})
 	})
 
@@ -165,7 +181,7 @@ var _ = Describe("RewriteResponse", func() {
 		It("leaves empty ID fields unchanged", func() {
 			out := rewriteResponse(obj{"Id": "abc", "ParentId": ""}, "s1", "proxy-id")
 
-			Expect(out["Id"]).To(Equal("s1_abc"))
+			Expect(out["Id"]).To(Equal(idtrans.Encode("s1", "abc")))
 			Expect(out["ParentId"]).To(Equal(""))
 		})
 	})
@@ -177,7 +193,7 @@ var _ = Describe("RewriteResponse", func() {
 			Expect(err).NotTo(HaveOccurred())
 			var out obj
 			Expect(json.Unmarshal(result, &out)).To(Succeed())
-			Expect(out["Id"]).To(Equal("s1_abc"))
+			Expect(out["Id"]).To(Equal(idtrans.Encode("s1", "abc")))
 			Expect(out["SeriesId"]).To(BeNil())
 		})
 	})
@@ -242,10 +258,11 @@ var _ = Describe("RewriteResponse", func() {
 // ── RewriteRequest ────────────────────────────────────────────────────────────
 
 var _ = Describe("RewriteRequest", func() {
-	Context("proxied IDs (with prefix)", func() {
-		It("strips the prefix, leaving non-ID fields untouched", func() {
+	Context("proxied IDs (UUID format via Encode)", func() {
+		It("strips the encoding, leaving non-ID fields untouched", func() {
+			encoded := idtrans.Encode("s1", "abc123")
 			out := rewriteRequest(obj{
-				"ItemId":    "s1_abc123",
+				"ItemId":    encoded,
 				"SomeOther": "untouched",
 			})
 
@@ -254,14 +271,22 @@ var _ = Describe("RewriteRequest", func() {
 		})
 
 		It("leaves ServerId unchanged", func() {
-			out := rewriteRequest(obj{"Id": "s1_abc", "ServerId": "proxy-server-id"})
+			encoded := idtrans.Encode("s1", "abc")
+			out := rewriteRequest(obj{"Id": encoded, "ServerId": "proxy-server-id"})
 
 			Expect(out["Id"]).To(Equal("abc"))
 			Expect(out["ServerId"]).To(Equal("proxy-server-id"))
 		})
 	})
 
-	Context("non-proxied IDs (without prefix)", func() {
+	Context("legacy prefix_backendID format", func() {
+		It("strips the prefix for backward compatibility", func() {
+			out := rewriteRequest(obj{"ItemId": "s1_abc123"})
+			Expect(out["ItemId"]).To(Equal("abc123"))
+		})
+	})
+
+	Context("non-proxied IDs (unknown format)", func() {
 		It("passes the ID through unchanged", func() {
 			out := rewriteRequest(obj{"Id": "noprefixhere"})
 

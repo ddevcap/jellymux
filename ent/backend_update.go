@@ -71,20 +71,6 @@ func (_u *BackendUpdate) SetNillableJellyfinServerID(v *string) *BackendUpdate {
 	return _u
 }
 
-// SetPrefix sets the "prefix" field.
-func (_u *BackendUpdate) SetPrefix(v string) *BackendUpdate {
-	_u.mutation.SetPrefix(v)
-	return _u
-}
-
-// SetNillablePrefix sets the "prefix" field if the given value is not nil.
-func (_u *BackendUpdate) SetNillablePrefix(v *string) *BackendUpdate {
-	if v != nil {
-		_u.SetPrefix(*v)
-	}
-	return _u
-}
-
 // SetEnabled sets the "enabled" field.
 func (_u *BackendUpdate) SetEnabled(v bool) *BackendUpdate {
 	_u.mutation.SetEnabled(v)
@@ -184,11 +170,6 @@ func (_u *BackendUpdate) check() error {
 			return &ValidationError{Name: "jellyfin_server_id", err: fmt.Errorf(`ent: validator failed for field "Backend.jellyfin_server_id": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Prefix(); ok {
-		if err := backend.PrefixValidator(v); err != nil {
-			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "Backend.prefix": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -212,9 +193,6 @@ func (_u *BackendUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.JellyfinServerID(); ok {
 		_spec.SetField(backend.FieldJellyfinServerID, field.TypeString, value)
-	}
-	if value, ok := _u.mutation.Prefix(); ok {
-		_spec.SetField(backend.FieldPrefix, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Enabled(); ok {
 		_spec.SetField(backend.FieldEnabled, field.TypeBool, value)
@@ -322,20 +300,6 @@ func (_u *BackendUpdateOne) SetJellyfinServerID(v string) *BackendUpdateOne {
 func (_u *BackendUpdateOne) SetNillableJellyfinServerID(v *string) *BackendUpdateOne {
 	if v != nil {
 		_u.SetJellyfinServerID(*v)
-	}
-	return _u
-}
-
-// SetPrefix sets the "prefix" field.
-func (_u *BackendUpdateOne) SetPrefix(v string) *BackendUpdateOne {
-	_u.mutation.SetPrefix(v)
-	return _u
-}
-
-// SetNillablePrefix sets the "prefix" field if the given value is not nil.
-func (_u *BackendUpdateOne) SetNillablePrefix(v *string) *BackendUpdateOne {
-	if v != nil {
-		_u.SetPrefix(*v)
 	}
 	return _u
 }
@@ -452,11 +416,6 @@ func (_u *BackendUpdateOne) check() error {
 			return &ValidationError{Name: "jellyfin_server_id", err: fmt.Errorf(`ent: validator failed for field "Backend.jellyfin_server_id": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.Prefix(); ok {
-		if err := backend.PrefixValidator(v); err != nil {
-			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "Backend.prefix": %w`, err)}
-		}
-	}
 	return nil
 }
 
@@ -497,9 +456,6 @@ func (_u *BackendUpdateOne) sqlSave(ctx context.Context) (_node *Backend, err er
 	}
 	if value, ok := _u.mutation.JellyfinServerID(); ok {
 		_spec.SetField(backend.FieldJellyfinServerID, field.TypeString, value)
-	}
-	if value, ok := _u.mutation.Prefix(); ok {
-		_spec.SetField(backend.FieldPrefix, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Enabled(); ok {
 		_spec.SetField(backend.FieldEnabled, field.TypeBool, value)

@@ -138,6 +138,7 @@ All configuration is via environment variables.
 | `CORS_ORIGINS` | *(empty)* | Comma-separated additional origins allowed for credentialed CORS requests |
 | `BITRATE_LIMIT` | `0` (unlimited) | Max remote client bitrate in bits/s, applied via Jellyfin user policy |
 | `HEALTH_CHECK_INTERVAL` | `30s` | How often the proxy pings backends to check availability. Backends that fail 2 consecutive checks are skipped in fan-out requests until they recover |
+| `LOG_LEVEL` | `info` | Minimum log level: `debug`, `info`, `warn`, `error` |
 
 ---
 

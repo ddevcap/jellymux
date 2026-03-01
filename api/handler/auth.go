@@ -2,6 +2,7 @@ package handler
 
 import (
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ddevcap/jellyfin-proxy/api/middleware"
@@ -74,8 +75,8 @@ func (h *AuthHandler) AuthenticateByName(c *gin.Context) {
 	appName := fallback(authParams["Client"], "Unknown")
 	appVersion := authParams["Version"]
 
-	token := uuid.New().String()
-	_, err = h.db.Session.Create().
+	token := strings.ReplaceAll(uuid.New().String(), "-", "")
+	sess, err := h.db.Session.Create().
 		SetToken(token).
 		SetDeviceID(deviceID).
 		SetDeviceName(deviceName).
@@ -89,27 +90,51 @@ func (h *AuthHandler) AuthenticateByName(c *gin.Context) {
 	}
 
 	now := time.Now().UTC()
+	userObj := buildUserObject(user, h.cfg)
+	userObj["LastLoginDate"] = now
+	userObj["LastActivityDate"] = now
+
+	serverID := strings.ReplaceAll(h.cfg.ServerID, "-", "")
+
 	c.JSON(http.StatusOK, gin.H{
-		"User": gin.H{
-			"Name":                      user.Username,
-			"ServerId":                  h.cfg.ServerID,
-			"ServerName":                h.cfg.ServerName,
-			"Id":                        user.ID,
-			"HasPassword":               true,
-			"HasConfiguredPassword":     true,
-			"HasConfiguredEasyPassword": false,
-			"EnableAutoLogin":           false,
-			"LastLoginDate":             now,
-			"LastActivityDate":          now,
-			"Policy":                    buildUserPolicy(user.IsAdmin, user.DirectStream, h.cfg),
-		},
+		"User": userObj,
 		"SessionInfo": gin.H{
-			"DeviceId":   deviceID,
-			"DeviceName": deviceName,
-			"Client":     appName,
+			"PlayState": gin.H{
+				"CanSeek":       false,
+				"IsPaused":      false,
+				"IsMuted":       false,
+				"RepeatMode":    "RepeatNone",
+				"PlaybackOrder": "Default",
+			},
+			"AdditionalUsers": []interface{}{},
+			"Capabilities": gin.H{
+				"PlayableMediaTypes":           []string{"Audio", "Video"},
+				"SupportedCommands":            []string{},
+				"SupportsMediaControl":         false,
+				"SupportsPersistentIdentifier": true,
+			},
+			"RemoteEndPoint":           c.ClientIP(),
+			"PlayableMediaTypes":       []string{"Audio", "Video"},
+			"Id":                       jellyfinID(sess.ID),
+			"UserId":                   jellyfinID(user.ID),
+			"UserName":                 user.Username,
+			"Client":                   appName,
+			"LastActivityDate":         now,
+			"LastPlaybackCheckIn":      "0001-01-01T00:00:00.0000000Z",
+			"DeviceName":               deviceName,
+			"DeviceId":                 deviceID,
+			"ApplicationVersion":       appVersion,
+			"IsActive":                 true,
+			"SupportsMediaControl":     false,
+			"SupportsRemoteControl":    false,
+			"NowPlayingQueue":          []interface{}{},
+			"NowPlayingQueueFullItems": []interface{}{},
+			"HasCustomDeviceName":      false,
+			"ServerId":                 serverID,
+			"SupportedCommands":        []string{},
 		},
 		"AccessToken": token,
-		"ServerId":    h.cfg.ServerID,
+		"ServerId":    serverID,
 	})
 }
 

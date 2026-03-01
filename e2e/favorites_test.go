@@ -15,7 +15,7 @@ var _ = Describe("Favorites & Played state", func() {
 
 	// getFirstMovieID fetches all merged movies and returns the first proxy-prefixed item ID.
 	getFirstMovieID := func() string {
-		resp := get(proxyURL("/items?parentId=merged_movies"), userToken)
+		resp := get(proxyURL("/items?parentId="+idtrans.EncodeMerged("movies")), userToken)
 		Expect(resp.StatusCode).To(Equal(http.StatusOK))
 		items, _ := pagedItems(resp)
 		Expect(items).NotTo(BeEmpty(), "need at least 1 movie for favorites tests")

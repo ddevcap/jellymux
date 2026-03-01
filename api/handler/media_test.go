@@ -74,12 +74,11 @@ func liveTvRouter() *gin.Engine {
 
 // registerLiveTvBackend adds a backend + user mapping for the single user
 // currently in the database (created by the Live TV BeforeEach).
-func registerLiveTvBackend(name, url, prefix, backendUserID string) {
+func registerLiveTvBackend(name, url, jellyfinServerID, backendUserID string) {
 	b, err := db.Backend.Create().
 		SetName(name).
 		SetURL(url).
-		SetJellyfinServerID("srv-" + prefix).
-		SetPrefix(prefix).
+		SetJellyfinServerID(jellyfinServerID).
 		Save(mediaCtx())
 	Expect(err).NotTo(HaveOccurred())
 
@@ -94,8 +93,7 @@ func setupMediaDB(fakeBackendURL string) string {
 	b, err := db.Backend.Create().
 		SetName("Test Backend").
 		SetURL(fakeBackendURL).
-		SetJellyfinServerID("fake-server-id").
-		SetPrefix(mediaTestPrefix).
+		SetJellyfinServerID(mediaTestPrefix).
 		Save(mediaCtx())
 	Expect(err).NotTo(HaveOccurred())
 
@@ -112,8 +110,7 @@ func setupMediaDBDirectStream(fakeBackendURL string) string {
 	b, err := db.Backend.Create().
 		SetName("Test Backend").
 		SetURL(fakeBackendURL).
-		SetJellyfinServerID("fake-server-id").
-		SetPrefix(mediaTestPrefix).
+		SetJellyfinServerID(mediaTestPrefix).
 		Save(mediaCtx())
 	Expect(err).NotTo(HaveOccurred())
 
@@ -306,9 +303,9 @@ var _ = Describe("MediaHandler", func() {
 				Expect(resp["TotalRecordCount"]).To(BeNumerically("==", 1))
 				items := resp["Items"].([]interface{})
 				Expect(items).To(HaveLen(1))
-				// The proxy should have rewritten the bare backend ID to the proxy-prefixed ID.
+				// The proxy should have rewritten the bare backend ID to a UUID.
 				item := items[0].(map[string]interface{})
-				Expect(item["Id"]).To(HavePrefix(mediaTestPrefix + "_"))
+				Expect(item["Id"]).To(MatchRegexp(`^[0-9a-f]{32}$`))
 			})
 		})
 
@@ -395,7 +392,7 @@ var _ = Describe("MediaHandler", func() {
 				items := resp["Items"].([]interface{})
 				Expect(items).To(HaveLen(1))
 				item := items[0].(map[string]interface{})
-				Expect(item["Id"]).To(HavePrefix(mediaTestPrefix + "_"))
+				Expect(item["Id"]).To(MatchRegexp(`^[0-9a-f]{32}$`))
 			})
 		})
 

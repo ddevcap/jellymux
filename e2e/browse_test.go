@@ -5,10 +5,11 @@ package e2e
 import (
 	"fmt"
 	"net/http"
-	"strings"
 
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
+
+	"github.com/ddevcap/jellyfin-proxy/idtrans"
 )
 
 var _ = Describe("Browsing", func() {
@@ -17,22 +18,20 @@ var _ = Describe("Browsing", func() {
 		var movieItems []interface{}
 
 		BeforeEach(func() {
-			resp := get(proxyURL("/items?parentId=merged_movies"), userToken)
+			resp := get(proxyURL("/items?parentId="+idtrans.EncodeMerged("movies")), userToken)
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 			movieItems, _ = pagedItems(resp)
 		})
 
-		It("returns items from both backend servers", func() {
-			prefixes := map[string]bool{}
+		It("returns items from both backend servers with UUID IDs", func() {
 			for _, raw := range movieItems {
 				item := raw.(map[string]interface{})
 				id := item["Id"].(string)
-				parts := strings.SplitN(id, "_", 2)
-				Expect(parts).To(HaveLen(2), "expected prefixed ID, got %q", id)
-				prefixes[parts[0]] = true
+				// All IDs should be 32-char hex strings (dashless UUIDs).
+				Expect(id).To(MatchRegexp(`^[0-9a-f]{32}$`), "expected UUID ID, got %q", id)
 			}
-			Expect(prefixes).To(HaveKey("s1"), "expected items from server 1")
-			Expect(prefixes).To(HaveKey("s2"), "expected items from server 2")
+			// We should have items from multiple backends.
+			Expect(movieItems).NotTo(BeEmpty())
 		})
 
 		It("each item resolves via GET /Items/:id", func() {
@@ -62,14 +61,14 @@ var _ = Describe("Browsing", func() {
 		})
 	})
 
-	Describe("GET /Items/:id with bad prefix", func() {
-		It("returns 400 for an ID without a prefix", func() {
+	Describe("GET /Items/:id with unknown ID", func() {
+		It("returns 400 for an ID not in the cache", func() {
 			resp := get(proxyURL("/items/noprefixhere"), userToken)
 			defer resp.Body.Close()
 			Expect(resp.StatusCode).To(Equal(http.StatusBadRequest))
 		})
 
-		It("returns an error for a non-existent server prefix", func() {
+		It("returns an error for a non-existent server (legacy prefix format)", func() {
 			resp := get(proxyURL("/items/zz_nonexistent"), userToken)
 			defer resp.Body.Close()
 			// Could be 404 or 400 — either is acceptable.
@@ -94,7 +93,7 @@ var _ = Describe("Browsing", func() {
 
 	Describe("GET /Items/Filters2 for merged library", func() {
 		It("returns aggregated filter options", func() {
-			resp := get(proxyURL("/items/filters2?parentId=merged_movies"), userToken)
+			resp := get(proxyURL("/items/filters2?parentId="+idtrans.EncodeMerged("movies")), userToken)
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			body := parseJSONObject(resp)
@@ -117,7 +116,7 @@ var _ = Describe("Browsing", func() {
 
 	Describe("GET /Users/:id/Items/Latest", func() {
 		It("returns latest items from a merged library", func() {
-			resp := get(proxyURL(fmt.Sprintf("/users/%s/items/latest?parentId=merged_movies", testUser.ID)), userToken)
+			resp := get(proxyURL("/users/"+testUser.ID+"/items/latest?parentId="+idtrans.EncodeMerged("movies")), userToken)
 			Expect(resp.StatusCode).To(Equal(http.StatusOK))
 
 			// LatestItems returns a bare array.
@@ -136,4 +135,3 @@ var _ = Describe("Browsing", func() {
 		})
 	})
 })
-

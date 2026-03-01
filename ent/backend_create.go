@@ -40,12 +40,6 @@ func (_c *BackendCreate) SetJellyfinServerID(v string) *BackendCreate {
 	return _c
 }
 
-// SetPrefix sets the "prefix" field.
-func (_c *BackendCreate) SetPrefix(v string) *BackendCreate {
-	_c.mutation.SetPrefix(v)
-	return _c
-}
-
 // SetEnabled sets the "enabled" field.
 func (_c *BackendCreate) SetEnabled(v bool) *BackendCreate {
 	_c.mutation.SetEnabled(v)
@@ -178,14 +172,6 @@ func (_c *BackendCreate) check() error {
 			return &ValidationError{Name: "jellyfin_server_id", err: fmt.Errorf(`ent: validator failed for field "Backend.jellyfin_server_id": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.Prefix(); !ok {
-		return &ValidationError{Name: "prefix", err: errors.New(`ent: missing required field "Backend.prefix"`)}
-	}
-	if v, ok := _c.mutation.Prefix(); ok {
-		if err := backend.PrefixValidator(v); err != nil {
-			return &ValidationError{Name: "prefix", err: fmt.Errorf(`ent: validator failed for field "Backend.prefix": %w`, err)}
-		}
-	}
 	if _, ok := _c.mutation.Enabled(); !ok {
 		return &ValidationError{Name: "enabled", err: errors.New(`ent: missing required field "Backend.enabled"`)}
 	}
@@ -238,10 +224,6 @@ func (_c *BackendCreate) createSpec() (*Backend, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.JellyfinServerID(); ok {
 		_spec.SetField(backend.FieldJellyfinServerID, field.TypeString, value)
 		_node.JellyfinServerID = value
-	}
-	if value, ok := _c.mutation.Prefix(); ok {
-		_spec.SetField(backend.FieldPrefix, field.TypeString, value)
-		_node.Prefix = value
 	}
 	if value, ok := _c.mutation.Enabled(); ok {
 		_spec.SetField(backend.FieldEnabled, field.TypeBool, value)

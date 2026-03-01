@@ -27,12 +27,6 @@ func (Backend) Fields() []ent.Field {
 		field.String("jellyfin_server_id").
 			Unique().
 			NotEmpty(),
-		// Short unique prefix prepended to all item IDs from this server, e.g. "s1".
-		// Kept to ≤8 chars so prefixed IDs stay reasonable in length.
-		field.String("prefix").
-			Unique().
-			NotEmpty().
-			MaxLen(8),
 		field.Bool("enabled").
 			Default(true),
 		field.Time("created_at").

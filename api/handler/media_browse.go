@@ -367,8 +367,8 @@ func (h *MediaHandler) userItemAction(c *gin.Context, method, collection string)
 		if user != nil {
 			allClients, err := h.pool.AllForUser(c.Request.Context(), user)
 			if err == nil && len(allClients) > 1 {
-				prefix, _, _ := idtrans.Decode(proxyItemID)
-				go h.syncWatchState(prefix, backendID, sc, method, collection, allClients)
+				serverID, _, _ := idtrans.Decode(proxyItemID)
+				go h.syncWatchState(serverID, backendID, sc, method, collection, allClients)
 			}
 		}
 	}

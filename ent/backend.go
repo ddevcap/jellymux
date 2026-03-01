@@ -24,8 +24,6 @@ type Backend struct {
 	URL string `json:"url,omitempty"`
 	// JellyfinServerID holds the value of the "jellyfin_server_id" field.
 	JellyfinServerID string `json:"jellyfin_server_id,omitempty"`
-	// Prefix holds the value of the "prefix" field.
-	Prefix string `json:"prefix,omitempty"`
 	// Enabled holds the value of the "enabled" field.
 	Enabled bool `json:"enabled,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -61,7 +59,7 @@ func (*Backend) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case backend.FieldEnabled:
 			values[i] = new(sql.NullBool)
-		case backend.FieldName, backend.FieldURL, backend.FieldJellyfinServerID, backend.FieldPrefix:
+		case backend.FieldName, backend.FieldURL, backend.FieldJellyfinServerID:
 			values[i] = new(sql.NullString)
 		case backend.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -105,12 +103,6 @@ func (_m *Backend) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field jellyfin_server_id", values[i])
 			} else if value.Valid {
 				_m.JellyfinServerID = value.String
-			}
-		case backend.FieldPrefix:
-			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field prefix", values[i])
-			} else if value.Valid {
-				_m.Prefix = value.String
 			}
 		case backend.FieldEnabled:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -173,9 +165,6 @@ func (_m *Backend) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("jellyfin_server_id=")
 	builder.WriteString(_m.JellyfinServerID)
-	builder.WriteString(", ")
-	builder.WriteString("prefix=")
-	builder.WriteString(_m.Prefix)
 	builder.WriteString(", ")
 	builder.WriteString("enabled=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Enabled))

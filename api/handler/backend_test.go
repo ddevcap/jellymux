@@ -63,16 +63,14 @@ var _ = Describe("BackendHandler", func() {
 				defer mock.Close()
 
 				w := doPost(router, "/proxy/backends", map[string]interface{}{
-					"name":   "Primary",
-					"url":    mock.URL,
-					"prefix": "s1",
+					"name": "Primary",
+					"url":  mock.URL,
 				})
 
 				Expect(w.Code).To(Equal(http.StatusCreated))
 				var resp map[string]interface{}
 				Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
 				Expect(resp["name"]).To(Equal("Primary"))
-				Expect(resp["prefix"]).To(Equal("s1"))
 				Expect(resp["jellyfin_server_id"]).To(Equal("server-uuid-1"))
 				Expect(resp).NotTo(HaveKey("token"))
 			})
@@ -81,26 +79,26 @@ var _ = Describe("BackendHandler", func() {
 		Context("when the backend is unreachable", func() {
 			It("returns 502", func() {
 				w := doPost(router, "/proxy/backends", map[string]interface{}{
-					"name":   "Primary",
-					"url":    "http://127.0.0.1:1", // nothing listening
-					"prefix": "s1",
+					"name": "Primary",
+					"url":  "http://127.0.0.1:1", // nothing listening
 				})
 
 				Expect(w.Code).To(Equal(http.StatusBadGateway))
 			})
 		})
 
-		Context("with a duplicate prefix", func() {
+		Context("with a duplicate jellyfin_server_id", func() {
 			It("returns 409", func() {
-				createBackend("Primary", "http://a.example.com", "s1")
+				// First backend is created with server ID "s1" via createBackend.
+				createBackend("Primary", "http://a.example.com", "server-uuid-dup")
 
-				mock := backendMock("server-uuid-different")
+				// Mock returns the SAME server ID — should conflict.
+				mock := backendMock("server-uuid-dup")
 				defer mock.Close()
 
 				w := doPost(router, "/proxy/backends", map[string]interface{}{
-					"name":   "Secondary",
-					"url":    mock.URL,
-					"prefix": "s1",
+					"name": "Secondary",
+					"url":  mock.URL,
 				})
 
 				Expect(w.Code).To(Equal(http.StatusConflict))
@@ -161,7 +159,7 @@ var _ = Describe("BackendHandler", func() {
 				Expect(w.Code).To(Equal(http.StatusOK))
 				var resp map[string]interface{}
 				Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
-				Expect(resp["prefix"]).To(Equal("s1"))
+				Expect(resp["jellyfin_server_id"]).To(Equal("s1"))
 			})
 		})
 

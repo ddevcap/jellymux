@@ -7,7 +7,9 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 
+	"github.com/ddevcap/jellyfin-proxy/idtrans"
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -24,12 +26,11 @@ var _ = Describe("ServerClient", func() {
 
 	const proxyServerID = "proxy-server-id"
 
-	newBackend := func(name, backendURL, prefix string) *ent.Backend {
+	newBackend := func(name, backendURL, jellyfinServerID string) *ent.Backend {
 		return db.Backend.Create().
 			SetName(name).
 			SetURL(backendURL).
-			SetPrefix(prefix).
-			SetJellyfinServerID("jf-" + prefix).
+			SetJellyfinServerID(jellyfinServerID).
 			SetEnabled(true).
 			SaveX(ctx)
 	}
@@ -117,10 +118,10 @@ var _ = Describe("ServerClient", func() {
 
 			var m map[string]interface{}
 			Expect(json.Unmarshal(body, &m)).To(Succeed())
-			// Id should be prefixed
-			Expect(m["Id"]).To(HavePrefix("j1_"))
-			// ServerId should be replaced with proxy server ID
-			Expect(m["ServerId"]).To(Equal(proxyServerID))
+			// Id should be a 32-char hex UUID (encoded from server ID + backend ID)
+			Expect(m["Id"]).To(Equal(idtrans.Encode("j1", "abc123")))
+			// ServerId should be replaced with proxy server ID (dashless)
+			Expect(m["ServerId"]).To(Equal(strings.ReplaceAll(proxyServerID, "-", "")))
 		})
 
 		It("passes through non-2xx responses without rewriting", func() {

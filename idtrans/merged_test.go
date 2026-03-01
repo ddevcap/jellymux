@@ -8,26 +8,40 @@ import (
 )
 
 var _ = Describe("EncodeMerged", func() {
-	DescribeTable("prefixes the content type with 'merged_'",
-		func(contentType, want string) {
-			Expect(idtrans.EncodeMerged(contentType)).To(Equal(want))
-		},
-		Entry("movies", "movies", "merged_movies"),
-		Entry("tvshows", "tvshows", "merged_tvshows"),
-		Entry("music", "music", "merged_music"),
-	)
+	It("returns a 32-character dashless UUID string", func() {
+		id := idtrans.EncodeMerged("movies")
+		Expect(id).To(HaveLen(32))
+		// Should not contain dashes.
+		Expect(id).NotTo(ContainSubstring("-"))
+	})
+
+	It("is deterministic", func() {
+		a := idtrans.EncodeMerged("movies")
+		b := idtrans.EncodeMerged("movies")
+		Expect(a).To(Equal(b))
+	})
+
+	It("produces different UUIDs for different collection types", func() {
+		Expect(idtrans.EncodeMerged("movies")).NotTo(Equal(idtrans.EncodeMerged("tvshows")))
+	})
 })
 
 var _ = Describe("DecodeMerged", func() {
+	BeforeEach(func() {
+		// Ensure the cache is populated.
+		idtrans.PrewarmMerged()
+	})
+
 	DescribeTable("recognises valid merged IDs",
-		func(id, wantContentType string) {
-			ct, ok := idtrans.DecodeMerged(id)
+		func(collectionType string) {
+			encoded := idtrans.EncodeMerged(collectionType)
+			ct, ok := idtrans.DecodeMerged(encoded)
 			Expect(ok).To(BeTrue())
-			Expect(ct).To(Equal(wantContentType))
+			Expect(ct).To(Equal(collectionType))
 		},
-		Entry("movies", "merged_movies", "movies"),
-		Entry("tvshows", "merged_tvshows", "tvshows"),
-		Entry("music", "merged_music", "music"),
+		Entry("movies", "movies"),
+		Entry("tvshows", "tvshows"),
+		Entry("music", "music"),
 	)
 
 	DescribeTable("rejects non-merged IDs",
@@ -37,9 +51,8 @@ var _ = Describe("DecodeMerged", func() {
 		},
 		Entry("regular proxy ID", "s1_abc123"),
 		Entry("bare ID without prefix", "abc123"),
-		Entry("merged prefix without underscore", "mergedmovies"),
 		Entry("empty string", ""),
-		Entry("proxy-prefixed merged ID", "s1_merged_movies"),
+		Entry("random UUID", "00000000000000000000000000000001"),
 	)
 
 	It("round-trips with EncodeMerged for various content types", func() {

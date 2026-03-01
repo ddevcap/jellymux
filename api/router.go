@@ -138,6 +138,7 @@ func registerRoutes(
 		pub.GET("/branding/configuration", systemH.BrandingConfiguration)
 		pub.GET("/branding/css", systemH.BrandingCss)
 		pub.GET("/quickconnect/enabled", systemH.QuickConnectEnabled)
+		pub.POST("/quickconnect/initiate", systemH.QuickConnectInitiate)
 		pub.GET("/playback/bitratetest", systemH.BitrateTest)
 
 		pub.GET("/items/:itemId/images/:imageType", mediaH.GetImage)
@@ -151,6 +152,7 @@ func registerRoutes(
 
 		// Avatar — public so Jellyfin clients can fetch without a session token.
 		pub.GET("/users/:userId/images/primary", avatarH.GetAvatar)
+		pub.GET("/userimage", avatarH.GetAvatarByQuery)
 	}
 
 	// --- Authenticated ---
@@ -161,6 +163,7 @@ func registerRoutes(
 		priv.DELETE("/sessions/logout", authH.Logout)
 		priv.POST("/sessions/logout", authH.Logout)
 		priv.GET("/sessions", mediaH.GetSessions)
+		priv.POST("/sessions/capabilities", systemH.SessionCapabilitiesFull)
 		priv.POST("/sessions/capabilities/full", systemH.SessionCapabilitiesFull)
 		priv.POST("/sessions/playing", mediaH.ReportPlaybackStart)
 		priv.POST("/sessions/playing/progress", mediaH.ReportPlaybackProgress)
@@ -206,6 +209,13 @@ func registerRoutes(
 		priv.POST("/users/:userId/policy", mediaH.UpdateUserPolicy)
 		priv.GET("/userviews", mediaH.GetUserViews)
 
+		// User-scoped shortcuts (Android TV app uses these without /:userId/)
+		priv.GET("/useritems/resume", mediaH.GetResumeItems)
+		priv.GET("/useritems/latest", mediaH.GetLatestItems)
+
+		// Client logging — no-op, just acknowledge.
+		priv.POST("/clientlog/document", systemH.ClientLogDocument)
+
 		// Avatar (authenticated upload / delete; GET is public above)
 		priv.POST("/users/:userId/images/primary", avatarH.UploadAvatar)
 		priv.DELETE("/users/:userId/images/primary", avatarH.DeleteAvatar)
@@ -216,6 +226,7 @@ func registerRoutes(
 		priv.GET("/items/filters", mediaH.GetQueryFilters)
 		priv.GET("/items/filters2", mediaH.GetQueryFilters)
 		priv.GET("/items/suggestions", mediaH.GetSuggestedItems)
+		priv.GET("/items/latest", mediaH.GetLatestItems)
 		priv.GET("/items/:itemId", mediaH.GetItem)
 		priv.POST("/items/:itemId", mediaH.UpdateItem)
 		priv.DELETE("/items/:itemId", mediaH.DeleteItem)

@@ -1,12 +1,15 @@
 package handler
 
 import (
+	"fmt"
 	"log/slog"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"github.com/gorilla/websocket"
 )
 
@@ -130,10 +133,10 @@ func WebSocketHandler(hub *WSHub) gin.HandlerFunc {
 }
 
 // sendKeepAlive writes a Jellyfin-format KeepAlive message.
-// Format: {"MessageType":"KeepAlive"}.
+// Format: {"MessageType":"KeepAlive","MessageId":"<uuid>"}.
+// The MessageId field is required by the jellyfin-sdk-kotlin deserializer.
 func sendKeepAlive(conn *websocket.Conn) error {
-	return conn.WriteMessage(
-		websocket.TextMessage,
-		[]byte(`{"MessageType":"KeepAlive"}`),
-	)
+	msgID := strings.ReplaceAll(uuid.New().String(), "-", "")
+	msg := fmt.Sprintf(`{"MessageType":"KeepAlive","MessageId":"%s"}`, msgID)
+	return conn.WriteMessage(websocket.TextMessage, []byte(msg))
 }

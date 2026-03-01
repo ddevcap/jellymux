@@ -72,8 +72,7 @@ func setupPlaybackDB(backendURL string) {
 	b, err := db.Backend.Create().
 		SetName("Playback Test Backend").
 		SetURL(backendURL).
-		SetJellyfinServerID("srv-playback").
-		SetPrefix(pbPrefix).
+		SetJellyfinServerID(pbPrefix).
 		Save(mediaCtx())
 	Expect(err).NotTo(HaveOccurred())
 
@@ -88,8 +87,7 @@ func setupPlaybackDBDirectStream(backendURL string) {
 	b, err := db.Backend.Create().
 		SetName("Playback Test Backend").
 		SetURL(backendURL).
-		SetJellyfinServerID("srv-playback").
-		SetPrefix(pbPrefix).
+		SetJellyfinServerID(pbPrefix).
 		Save(mediaCtx())
 	Expect(err).NotTo(HaveOccurred())
 

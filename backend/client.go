@@ -25,8 +25,9 @@ type ServerClient struct {
 	pool          *Pool
 }
 
-// Prefix returns the backend's short prefix string (e.g. "s1").
-func (sc *ServerClient) Prefix() string { return sc.backend.Prefix }
+// JellyfinServerID returns the backend server's Jellyfin server ID.
+// Used as the namespace key for idtrans.Encode/Decode.
+func (sc *ServerClient) JellyfinServerID() string { return sc.backend.JellyfinServerID }
 
 // BackendUserID returns the user's ID on the backend server.
 func (sc *ServerClient) BackendUserID() string { return sc.backendUserID }
@@ -93,7 +94,7 @@ func (sc *ServerClient) ProxyJSON(ctx context.Context, method, path string, quer
 		Name: sc.backend.Name,
 		URL:  sc.backend.URL,
 	}
-	translated, err := idtrans.RewriteResponse(raw, sc.backend.Prefix, sc.pool.cfg.ServerID, bi)
+	translated, err := idtrans.RewriteResponse(raw, sc.backend.JellyfinServerID, strings.ReplaceAll(sc.pool.cfg.ServerID, "-", ""), bi)
 	if err != nil {
 		// Non-JSON body (e.g. an image accidentally routed here): pass through.
 		return raw, resp.StatusCode, nil

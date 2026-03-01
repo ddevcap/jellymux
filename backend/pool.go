@@ -85,14 +85,14 @@ func (p *Pool) isAvailable(backendID string) bool {
 }
 
 // ForUser returns a ServerClient configured with the per-user authentication
-// token for the given proxy user on the backend identified by prefix.
+// token for the given proxy user on the backend identified by jellyfinServerID.
 // When no mapping or token exists the token will be empty.
-func (p *Pool) ForUser(ctx context.Context, prefix string, user *ent.User) (*ServerClient, error) {
+func (p *Pool) ForUser(ctx context.Context, jellyfinServerID string, user *ent.User) (*ServerClient, error) {
 	b, err := p.db.Backend.Query().
-		Where(entbackend.Prefix(prefix), entbackend.Enabled(true)).
+		Where(entbackend.JellyfinServerID(jellyfinServerID), entbackend.Enabled(true)).
 		Only(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("backend: server with prefix %q not found: %w", prefix, err)
+		return nil, fmt.Errorf("backend: server %q not found: %w", jellyfinServerID, err)
 	}
 
 	var token string
@@ -163,12 +163,12 @@ func (p *Pool) AllForUser(ctx context.Context, user *ent.User) ([]*ServerClient,
 // ForBackend returns a ServerClient without user-specific credentials.
 // Used for unauthenticated public requests (e.g. images) where no user
 // session is available. The token will be empty.
-func (p *Pool) ForBackend(ctx context.Context, prefix string) (*ServerClient, error) {
+func (p *Pool) ForBackend(ctx context.Context, jellyfinServerID string) (*ServerClient, error) {
 	b, err := p.db.Backend.Query().
-		Where(entbackend.Prefix(prefix), entbackend.Enabled(true)).
+		Where(entbackend.JellyfinServerID(jellyfinServerID), entbackend.Enabled(true)).
 		Only(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("backend: server with prefix %q not found: %w", prefix, err)
+		return nil, fmt.Errorf("backend: server %q not found: %w", jellyfinServerID, err)
 	}
 	return &ServerClient{
 		backend: b,

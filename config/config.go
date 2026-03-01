@@ -49,6 +49,9 @@ type Config struct {
 	// availability. Backends that fail 2 consecutive checks are skipped in
 	// fan-out requests until they recover. Default: 30s.
 	HealthCheckInterval time.Duration `env:"HEALTH_CHECK_INTERVAL" envDefault:"30s"`
+	// LogLevel controls the minimum log level. Accepted values: debug, info,
+	// warn, error. Default: info.
+	LogLevel string `env:"LOG_LEVEL" envDefault:"info"`
 }
 
 // Load parses configuration from environment variables.

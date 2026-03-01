@@ -31,30 +31,12 @@ func init() {
 	backendDescJellyfinServerID := backendFields[3].Descriptor()
 	// backend.JellyfinServerIDValidator is a validator for the "jellyfin_server_id" field. It is called by the builders before save.
 	backend.JellyfinServerIDValidator = backendDescJellyfinServerID.Validators[0].(func(string) error)
-	// backendDescPrefix is the schema descriptor for prefix field.
-	backendDescPrefix := backendFields[4].Descriptor()
-	// backend.PrefixValidator is a validator for the "prefix" field. It is called by the builders before save.
-	backend.PrefixValidator = func() func(string) error {
-		validators := backendDescPrefix.Validators
-		fns := [...]func(string) error{
-			validators[0].(func(string) error),
-			validators[1].(func(string) error),
-		}
-		return func(prefix string) error {
-			for _, fn := range fns {
-				if err := fn(prefix); err != nil {
-					return err
-				}
-			}
-			return nil
-		}
-	}()
 	// backendDescEnabled is the schema descriptor for enabled field.
-	backendDescEnabled := backendFields[5].Descriptor()
+	backendDescEnabled := backendFields[4].Descriptor()
 	// backend.DefaultEnabled holds the default value on creation for the enabled field.
 	backend.DefaultEnabled = backendDescEnabled.Default.(bool)
 	// backendDescCreatedAt is the schema descriptor for created_at field.
-	backendDescCreatedAt := backendFields[6].Descriptor()
+	backendDescCreatedAt := backendFields[5].Descriptor()
 	// backend.DefaultCreatedAt holds the default value on creation for the created_at field.
 	backend.DefaultCreatedAt = backendDescCreatedAt.Default.(func() time.Time)
 	// backendDescID is the schema descriptor for id field.

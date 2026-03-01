@@ -42,7 +42,6 @@ type backendResponse struct {
 	Name             string    `json:"name"`
 	URL              string    `json:"url"`
 	JellyfinServerID string    `json:"jellyfin_server_id"`
-	Prefix           string    `json:"prefix"`
 	Enabled          bool      `json:"enabled"`
 	CreatedAt        time.Time `json:"created_at"`
 }
@@ -53,7 +52,6 @@ func toBackendResponse(b *ent.Backend) backendResponse {
 		Name:             b.Name,
 		URL:              b.URL,
 		JellyfinServerID: b.JellyfinServerID,
-		Prefix:           b.Prefix,
 		Enabled:          b.Enabled,
 		CreatedAt:        b.CreatedAt,
 	}
@@ -89,9 +87,6 @@ func toBackendUserResponse(bu *ent.BackendUser, backendID uuid.UUID) backendUser
 type createBackendRequest struct {
 	Name string `json:"name"   binding:"required"`
 	URL  string `json:"url"    binding:"required,http_url"`
-	// prefix is the short unique tag prepended to every item ID from this backend.
-	// Must be 1–8 alphanumeric characters, unique across all backends.
-	Prefix string `json:"prefix" binding:"required,min=1,max=8,alphanum"`
 }
 
 // CreateBackend handles POST /proxy/backends.
@@ -140,11 +135,10 @@ func (h *BackendHandler) CreateBackend(c *gin.Context) {
 		SetName(req.Name).
 		SetURL(req.URL).
 		SetJellyfinServerID(infoResult.ID).
-		SetPrefix(req.Prefix).
 		Save(c.Request.Context())
 	if err != nil {
 		if ent.IsConstraintError(err) {
-			c.JSON(http.StatusConflict, gin.H{"error": "prefix or jellyfin_server_id already in use"})
+			c.JSON(http.StatusConflict, gin.H{"error": "jellyfin_server_id already registered"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create backend"})
@@ -193,8 +187,8 @@ func (h *BackendHandler) GetBackend(c *gin.Context) {
 }
 
 // updateBackendRequest uses pointer fields for partial updates.
-// prefix and jellyfin_server_id are not updatable — changing prefix would
-// invalidate all proxy-scoped item IDs already cached by clients.
+// jellyfin_server_id is not updatable — changing it would invalidate all
+// proxy-scoped item IDs already cached by clients.
 type updateBackendRequest struct {
 	Name    *string `json:"name"    binding:"omitempty,min=1"`
 	URL     *string `json:"url"     binding:"omitempty,http_url"`

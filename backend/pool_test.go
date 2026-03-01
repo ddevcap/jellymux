@@ -23,12 +23,11 @@ var _ = Describe("Pool", func() {
 		pool = backend.NewPool(db, config.Config{ServerID: "proxy-id"})
 	})
 
-	newBackend := func(name, url, prefix string) *ent.Backend {
+	newBackend := func(name, url, jellyfinServerID string) *ent.Backend {
 		return db.Backend.Create().
 			SetName(name).
 			SetURL(url).
-			SetPrefix(prefix).
-			SetJellyfinServerID("server-id-" + prefix).
+			SetJellyfinServerID(jellyfinServerID).
 			SetEnabled(true).
 			SaveX(ctx)
 	}
@@ -62,7 +61,7 @@ var _ = Describe("Pool", func() {
 			sc, err := pool.ForUser(ctx, "mov", u)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(sc.Prefix()).To(Equal("mov"))
+			Expect(sc.JellyfinServerID()).To(Equal("mov"))
 			Expect(sc.Token()).To(BeEmpty())
 			Expect(sc.BackendUserID()).To(BeEmpty())
 		})
@@ -92,7 +91,7 @@ var _ = Describe("Pool", func() {
 			Expect(sc.BackendUserID()).To(Equal("carol-backend-id"))
 		})
 
-		It("returns an error for an unknown prefix", func() {
+		It("returns an error for an unknown server ID", func() {
 			u := newUser("dave")
 
 			_, err := pool.ForUser(ctx, "unknown", u)
@@ -114,8 +113,8 @@ var _ = Describe("Pool", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(clients).To(HaveLen(2))
-			prefixes := []string{clients[0].Prefix(), clients[1].Prefix()}
-			Expect(prefixes).To(ConsistOf("mov", "tv"))
+			serverIDs := []string{clients[0].JellyfinServerID(), clients[1].JellyfinServerID()}
+			Expect(serverIDs).To(ConsistOf("mov", "tv"))
 		})
 
 		It("returns an empty token when the mapping has no per-user token", func() {
@@ -147,11 +146,11 @@ var _ = Describe("Pool", func() {
 			sc, err := pool.ForBackend(ctx, "mov")
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(sc.Prefix()).To(Equal("mov"))
+			Expect(sc.JellyfinServerID()).To(Equal("mov"))
 			Expect(sc.Token()).To(BeEmpty())
 		})
 
-		It("returns an error for an unknown prefix", func() {
+		It("returns an error for an unknown server ID", func() {
 			_, err := pool.ForBackend(ctx, "nope")
 
 			Expect(err).To(HaveOccurred())

@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 	"time"
 
@@ -15,20 +16,33 @@ import (
 	"github.com/ddevcap/jellyfin-proxy/backend"
 	"github.com/ddevcap/jellyfin-proxy/config"
 	"github.com/ddevcap/jellyfin-proxy/ent/migrate"
+	"github.com/ddevcap/jellyfin-proxy/idtrans"
 
 	"github.com/ddevcap/jellyfin-proxy/ent"
 	_ "github.com/lib/pq"
 )
 
 func main() {
-	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
-	slog.SetDefault(logger)
 
 	cfg, err := config.Load()
 	if err != nil {
 		slog.Error("failed to load configuration", "error", err)
 		os.Exit(1)
 	}
+
+	var logLevel slog.Level
+	switch strings.ToLower(cfg.LogLevel) {
+	case "debug":
+		logLevel = slog.LevelDebug
+	case "warn":
+		logLevel = slog.LevelWarn
+	case "error":
+		logLevel = slog.LevelError
+	default:
+		logLevel = slog.LevelInfo
+	}
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: logLevel}))
+	slog.SetDefault(logger)
 
 	client, err := ent.Open(dialect.Postgres, cfg.DatabaseURL)
 	if err != nil {
@@ -48,6 +62,10 @@ func main() {
 	api.SeedInitialAdmin(context.Background(), client, cfg)
 
 	pool := backend.NewPool(client, cfg)
+
+	// Populate the merged-library UUID cache so DecodeMerged can
+	// recognise incoming merged IDs from the very first request.
+	idtrans.PrewarmMerged()
 
 	// Start background health checker so fan-out requests skip offline backends.
 	hc := backend.NewHealthChecker(pool, cfg.HealthCheckInterval)

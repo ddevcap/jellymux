@@ -21,8 +21,6 @@ const (
 	FieldURL = "url"
 	// FieldJellyfinServerID holds the string denoting the jellyfin_server_id field in the database.
 	FieldJellyfinServerID = "jellyfin_server_id"
-	// FieldPrefix holds the string denoting the prefix field in the database.
-	FieldPrefix = "prefix"
 	// FieldEnabled holds the string denoting the enabled field in the database.
 	FieldEnabled = "enabled"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -46,7 +44,6 @@ var Columns = []string{
 	FieldName,
 	FieldURL,
 	FieldJellyfinServerID,
-	FieldPrefix,
 	FieldEnabled,
 	FieldCreatedAt,
 }
@@ -68,8 +65,6 @@ var (
 	URLValidator func(string) error
 	// JellyfinServerIDValidator is a validator for the "jellyfin_server_id" field. It is called by the builders before save.
 	JellyfinServerIDValidator func(string) error
-	// PrefixValidator is a validator for the "prefix" field. It is called by the builders before save.
-	PrefixValidator func(string) error
 	// DefaultEnabled holds the default value on creation for the "enabled" field.
 	DefaultEnabled bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -99,11 +94,6 @@ func ByURL(opts ...sql.OrderTermOption) OrderOption {
 // ByJellyfinServerID orders the results by the jellyfin_server_id field.
 func ByJellyfinServerID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldJellyfinServerID, opts...).ToFunc()
-}
-
-// ByPrefix orders the results by the prefix field.
-func ByPrefix(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldPrefix, opts...).ToFunc()
 }
 
 // ByEnabled orders the results by the enabled field.
