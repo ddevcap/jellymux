@@ -4,7 +4,7 @@
 # Source: https://github.com/ddevcap/jellyfin-proxy-web (GPL-2.0)
 FROM alpine:3.21 AS web-stage
 
-ARG JELLYFIN_WEB_VERSION=10.11.6-proxy.2
+ARG JELLYFIN_WEB_VERSION=10.11.6-proxy.3
 
 ADD https://github.com/ddevcap/jellyfin-proxy-web/releases/download/v${JELLYFIN_WEB_VERSION}/dist.tar.gz /tmp/dist.tar.gz
 RUN mkdir -p /srv/jellyfin-web \

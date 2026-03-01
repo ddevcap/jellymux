@@ -25,14 +25,14 @@ on each.
 - Maintaining its **own user accounts** with hashed passwords — clients
   authenticate against the proxy, not against any backend directly.
 - **Routing requests** transparently to the correct backend based on the item
-  being requested, using a per-backend ID prefix to disambiguate items across
+  being requested, using deterministic UUID v5 IDs to disambiguate items across
   servers.
 - Letting you map each proxy user to accounts on one or more backends, with
   optional per-user tokens for fine-grained access control.
 - **Merging libraries** across backends transparently — if two backends both
   expose a Movies library, clients see a single unified Movies library. Items
-  are fetched from all contributing backends and concatenated. The per-backend
-  ID prefix ensures items from different servers never collide.
+  are fetched from all contributing backends and concatenated. Deterministic
+  UUID v5 IDs ensure items from different servers never collide.
 - **Direct streaming** (optional) — when a user's `direct_stream` flag is
   enabled, the proxy issues a `302` redirect for all streaming requests
   (video, audio, images, HLS) instead of piping bytes through itself. Clients
@@ -209,10 +209,11 @@ Defaults to `false`.
 
 ### Backends
 
-A backend is a real Jellyfin server that the proxy routes requests to. Each
-backend needs a short unique **prefix** (1–8 chars) that is prepended to every
-item ID originating from that server. This allows the proxy to route any item
-request back to the correct backend without ambiguity.
+A backend is a real Jellyfin server that the proxy routes requests to. When a
+backend is registered, the proxy fetches its server ID from `/System/Info/Public`
+and stores it as the `external_id`. This ID is used as the namespace for
+deterministic UUID v5 proxy IDs, so every item is globally unique across
+backends without any manual configuration.
 
 | Method | Path | Description |
 |---|---|---|
@@ -228,17 +229,13 @@ request back to the correct backend without ambiguity.
 ```json
 {
   "name": "Movies",
-  "url": "http://jellyfin-movies:8096",
-  "prefix": "mov"
+  "url": "http://jellyfin-movies:8096"
 }
 ```
 
 The proxy fetches the server ID from the backend's public `/System/Info`
 endpoint (no credentials required) and persists the backend record. Per-user
 tokens are created separately via `POST /proxy/backends/:id/login`.
-
-- `prefix` — must be unique across all backends and must not change after
-  clients have cached item IDs.
 
 
 ---
