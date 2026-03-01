@@ -133,7 +133,6 @@ All configuration is via environment variables.
 | `LOGIN_BAN_DURATION` | `15m` | How long an IP is banned after too many failures |
 | `INITIAL_ADMIN_USER` | `admin` | Username for the auto-seeded admin account |
 | `INITIAL_ADMIN_PASSWORD` | *(empty — seeding skipped)* | Password for the auto-seeded admin account |
-
 | `SHUTDOWN_TIMEOUT` | `15s` | Max time to wait for in-flight requests during graceful shutdown |
 | `CORS_ORIGINS` | *(empty)* | Comma-separated additional origins allowed for credentialed CORS requests |
 | `BITRATE_LIMIT` | `0` (unlimited) | Max remote client bitrate in bits/s, applied via Jellyfin user policy |
