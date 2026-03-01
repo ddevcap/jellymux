@@ -38,7 +38,7 @@ var _ = Describe("BackendHandler", func() {
 		router.POST("/proxy/backends/:id/login", h.LoginToBackend)
 	})
 
-	// ── CreateBackend ─────────────────────────────────────────────────────────
+	// ── CreateBackend ────────────────────────────────────────────────────────────
 
 	Describe("CreateBackend", func() {
 		// backendMock starts a fake Jellyfin server that serves /system/info/public.
@@ -116,7 +116,7 @@ var _ = Describe("BackendHandler", func() {
 		})
 	})
 
-	// ── ListBackends ──────────────────────────────────────────────────────────
+	// ── ListBackends ─────────────────────────────────────────────────────────────
 
 	Describe("ListBackends", func() {
 		Context("with no backends", func() {
@@ -147,7 +147,7 @@ var _ = Describe("BackendHandler", func() {
 		})
 	})
 
-	// ── GetBackend ────────────────────────────────────────────────────────────
+	// ── GetBackend ───────────────────────────────────────────────────────────────
 
 	Describe("GetBackend", func() {
 		Context("when the backend exists", func() {
@@ -180,7 +180,7 @@ var _ = Describe("BackendHandler", func() {
 		})
 	})
 
-	// ── UpdateBackend ─────────────────────────────────────────────────────────
+	// ── UpdateBackend ────────────────────────────────────────────────────────────
 
 	Describe("UpdateBackend", func() {
 		var backend *ent.Backend
@@ -236,7 +236,7 @@ var _ = Describe("BackendHandler", func() {
 		})
 	})
 
-	// ── DeleteBackend ─────────────────────────────────────────────────────────
+	// ── DeleteBackend ────────────────────────────────────────────────────────────
 
 	Describe("DeleteBackend", func() {
 		Context("when the backend exists", func() {
@@ -256,9 +256,17 @@ var _ = Describe("BackendHandler", func() {
 				Expect(w.Code).To(Equal(http.StatusNotFound))
 			})
 		})
+
+		Context("with a malformed UUID", func() {
+			It("returns 400", func() {
+				w := doDelete(router, "/proxy/backends/not-a-uuid")
+
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
 	})
 
-	// ── CreateBackendUser ─────────────────────────────────────────────────────
+	// ── CreateBackendUser ────────────────────────────────────────────────────────
 
 	Describe("CreateBackendUser", func() {
 		var (
@@ -302,9 +310,53 @@ var _ = Describe("BackendHandler", func() {
 				Expect(w.Code).To(Equal(http.StatusConflict))
 			})
 		})
+
+		Context("when required fields are missing", func() {
+			It("returns 400 when user_id is missing", func() {
+				w := doPost(router, "/proxy/backends/"+backend.ID.String()+"/users",
+					map[string]interface{}{
+						"backend_user_id": "jellyfin-user-abc",
+					},
+				)
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
+			})
+
+			It("returns 400 when backend_user_id is missing", func() {
+				w := doPost(router, "/proxy/backends/"+backend.ID.String()+"/users",
+					map[string]interface{}{
+						"user_id": user.ID.String(),
+					},
+				)
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
+
+		Context("when the backend does not exist", func() {
+			It("returns 404", func() {
+				w := doPost(router, "/proxy/backends/00000000-0000-0000-0000-000000000001/users",
+					map[string]interface{}{
+						"user_id":         user.ID.String(),
+						"backend_user_id": "jf-user",
+					},
+				)
+				Expect(w.Code).To(Equal(http.StatusNotFound))
+			})
+		})
+
+		Context("when the user does not exist", func() {
+			It("returns 404", func() {
+				w := doPost(router, "/proxy/backends/"+backend.ID.String()+"/users",
+					map[string]interface{}{
+						"user_id":         "00000000-0000-0000-0000-000000000099",
+						"backend_user_id": "jf-user",
+					},
+				)
+				Expect(w.Code).To(Equal(http.StatusNotFound))
+			})
+		})
 	})
 
-	// ── ListBackendUsers ──────────────────────────────────────────────────────
+	// ── ListBackendUsers ─────────────────────────────────────────────────────────
 
 	Describe("ListBackendUsers", func() {
 		var backend *ent.Backend
@@ -339,9 +391,23 @@ var _ = Describe("BackendHandler", func() {
 				Expect(resp).To(HaveLen(2))
 			})
 		})
+
+		Context("when the backend does not exist", func() {
+			It("returns 404", func() {
+				w := doGet(router, "/proxy/backends/00000000-0000-0000-0000-000000000001/users")
+				Expect(w.Code).To(Equal(http.StatusNotFound))
+			})
+		})
+
+		Context("with a malformed backend UUID", func() {
+			It("returns 400", func() {
+				w := doGet(router, "/proxy/backends/not-a-uuid/users")
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
 	})
 
-	// ── UpdateBackendUser ─────────────────────────────────────────────────────
+	// ── UpdateBackendUser ────────────────────────────────────────────────────────
 
 	Describe("UpdateBackendUser", func() {
 		var (
@@ -393,9 +459,40 @@ var _ = Describe("BackendHandler", func() {
 				Expect(w.Code).To(Equal(http.StatusBadRequest))
 			})
 		})
+
+		Context("when the mapping does not exist", func() {
+			It("returns 404", func() {
+				w := doPatch(router,
+					fmt.Sprintf("/proxy/backends/%s/users/%s", backend.ID, "00000000-0000-0000-0000-000000000001"),
+					map[string]string{"backend_user_id": "new-id"},
+				)
+				Expect(w.Code).To(Equal(http.StatusNotFound))
+			})
+		})
+
+		Context("with a malformed mapping UUID", func() {
+			It("returns 400", func() {
+				w := doPatch(router,
+					fmt.Sprintf("/proxy/backends/%s/users/%s", backend.ID, "not-a-uuid"),
+					map[string]string{"backend_user_id": "new-id"},
+				)
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
+
+		Context("updating backend_token", func() {
+			It("returns 200 with the updated mapping", func() {
+				w := doPatch(router,
+					fmt.Sprintf("/proxy/backends/%s/users/%s", backend.ID, mapping.ID),
+					map[string]interface{}{"backend_token": "new-token-value"},
+				)
+
+				Expect(w.Code).To(Equal(http.StatusOK))
+			})
+		})
 	})
 
-	// ── DeleteBackendUser ─────────────────────────────────────────────────────
+	// ── DeleteBackendUser ────────────────────────────────────────────────────────
 
 	Describe("DeleteBackendUser", func() {
 		Context("when the mapping exists", func() {
@@ -423,9 +520,21 @@ var _ = Describe("BackendHandler", func() {
 				Expect(w.Code).To(Equal(http.StatusNotFound))
 			})
 		})
+
+		Context("with a malformed mapping UUID", func() {
+			It("returns 400", func() {
+				backend := createBackend("Primary", "http://media.example.com", "s1")
+
+				w := doDelete(router,
+					fmt.Sprintf("/proxy/backends/%s/users/%s", backend.ID, "not-a-uuid"),
+				)
+
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
 	})
 
-	// ── LoginToBackend ────────────────────────────────────────────────────────
+	// ── LoginToBackend ───────────────────────────────────────────────────────────
 
 	Describe("LoginToBackend", func() {
 		var (
@@ -542,6 +651,34 @@ var _ = Describe("BackendHandler", func() {
 				)
 
 				Expect(w.Code).To(Equal(http.StatusNotFound))
+			})
+		})
+
+		Context("when required fields are missing", func() {
+			It("returns 400", func() {
+				mock := jellyfinMockServer(http.StatusOK)
+				defer mock.Close()
+				backend = createBackend("Primary", mock.URL, "s1")
+
+				w := doPost(router, "/proxy/backends/"+backend.ID.String()+"/login",
+					map[string]interface{}{
+						"username": "alice",
+					},
+				)
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
+
+		Context("with a malformed backend UUID", func() {
+			It("returns 400", func() {
+				w := doPost(router, "/proxy/backends/not-a-uuid/login",
+					map[string]interface{}{
+						"proxy_user_id": user.ID.String(),
+						"username":      "alice",
+						"password":      "anypass",
+					},
+				)
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
 			})
 		})
 	})

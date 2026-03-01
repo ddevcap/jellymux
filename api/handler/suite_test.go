@@ -69,7 +69,7 @@ func cleanDB() {
 	db.User.Delete().ExecX(ctx)
 }
 
-// ── DB helpers ────────────────────────────────────────────────────────────────
+// ── DB helpers ───────────────────────────────────────────────────────────────
 
 // createUser inserts a user with a bcrypt hash. bcrypt.MinCost (4 rounds) is
 // used intentionally to keep tests fast without affecting correctness.
@@ -124,7 +124,7 @@ func createSession(user *ent.User, token string) *ent.Session {
 	return s
 }
 
-// ── HTTP helpers ──────────────────────────────────────────────────────────────
+// ── HTTP helpers ─────────────────────────────────────────────────────────────
 
 // doRequest fires an HTTP request against handler r and returns the recorder.
 // body is JSON-encoded when non-nil. Extra header maps are applied in order.

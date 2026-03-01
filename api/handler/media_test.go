@@ -133,7 +133,7 @@ var _ = Describe("MediaHandler", func() {
 		cleanDB()
 	})
 
-	// ── Download ──────────────────────────────────────────────────────────────
+	// ── Download ─────────────────────────────────────────────────────────────────
 
 	Describe("Download", func() {
 		Context("when the backend returns the file", func() {
@@ -198,7 +198,7 @@ var _ = Describe("MediaHandler", func() {
 		})
 	})
 
-	// ── Lyrics ────────────────────────────────────────────────────────────────
+	// ── Lyrics ───────────────────────────────────────────────────────────────────
 
 	Describe("Lyrics", func() {
 		Context("when the backend returns lyrics", func() {
@@ -275,7 +275,7 @@ var _ = Describe("MediaHandler", func() {
 		})
 	})
 
-	// ── GetCollectionItems ────────────────────────────────────────────────────
+	// ── GetCollectionItems ───────────────────────────────────────────────────────
 
 	Describe("GetCollectionItems", func() {
 		Context("when the backend returns collection items", func() {
@@ -366,7 +366,7 @@ var _ = Describe("MediaHandler", func() {
 		})
 	})
 
-	// ── GetEpisodes ───────────────────────────────────────────────────────────
+	// ── GetEpisodes ──────────────────────────────────────────────────────────────
 
 	Describe("GetEpisodes", func() {
 		Context("when the backend returns episodes", func() {
@@ -457,6 +457,22 @@ var _ = Describe("MediaHandler", func() {
 				Expect(w.Code).To(Equal(http.StatusUnauthorized))
 			})
 		})
+
+		Context("with an invalid series ID", func() {
+			It("returns 400", func() {
+				fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.WriteHeader(http.StatusOK)
+				}))
+				defer fakeBackend.Close()
+
+				token := setupMediaDB(fakeBackend.URL)
+				router, _ := mediaTestRouter()
+
+				w := doGet(router, "/shows/invalid-series-id/episodes",
+					map[string]string{"X-Emby-Token": token})
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
 	})
 })
 
@@ -470,7 +486,7 @@ var _ = Describe("Live TV handlers", func() {
 		router = liveTvRouter()
 	})
 
-	// ── GetLiveTvChannels ─────────────────────────────────────────────────────
+	// ── GetLiveTvChannels ────────────────────────────────────────────────────────
 
 	Describe("GetLiveTvChannels", func() {
 		Context("with a single backend", func() {
@@ -567,7 +583,7 @@ var _ = Describe("Live TV handlers", func() {
 		})
 	})
 
-	// ── GetLiveTvPrograms ─────────────────────────────────────────────────────
+	// ── GetLiveTvPrograms ────────────────────────────────────────────────────────
 
 	Describe("GetLiveTvPrograms", func() {
 		Context("with two backends", func() {
@@ -618,7 +634,7 @@ var _ = Describe("Live TV handlers", func() {
 		})
 	})
 
-	// ── GetLiveTvRecommendedPrograms ──────────────────────────────────────────
+	// ── GetLiveTvRecommendedPrograms ─────────────────────────────────────────────
 
 	Describe("GetLiveTvRecommendedPrograms", func() {
 		Context("with two backends", func() {
@@ -658,7 +674,7 @@ var _ = Describe("Live TV handlers", func() {
 		})
 	})
 
-	// ── GetLiveTvInfo ─────────────────────────────────────────────────────────
+	// ── GetLiveTvInfo ────────────────────────────────────────────────────────────
 
 	Describe("GetLiveTvInfo", func() {
 		Context("with a single backend", func() {

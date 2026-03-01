@@ -104,7 +104,7 @@ func (h *AvatarHandler) DeleteAvatar(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// ── helpers ───────────────────────────────────────────────────────────────────
+// ── helpers ──────────────────────────────────────────────────────────────────
 
 // decodeImageBody accepts a raw body that may be:
 //  1. A data URL:  "data:image/png;base64,<b64data>"

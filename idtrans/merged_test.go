@@ -63,4 +63,23 @@ var _ = Describe("DecodeMerged", func() {
 			Expect(decoded).To(Equal(ct))
 		}
 	})
+
+	It("accepts the legacy merged_ prefix format", func() {
+		ct, ok := idtrans.DecodeMerged("merged_movies")
+		Expect(ok).To(BeTrue())
+		Expect(ct).To(Equal("movies"))
+	})
+
+	It("rejects merged_ prefix with empty collection type", func() {
+		_, ok := idtrans.DecodeMerged("merged_")
+		Expect(ok).To(BeFalse())
+	})
+
+	It("accepts a dashed UUID form", func() {
+		encoded := idtrans.EncodeMerged("tvshows")
+		dashed := encoded[0:8] + "-" + encoded[8:12] + "-" + encoded[12:16] + "-" + encoded[16:20] + "-" + encoded[20:32]
+		ct, ok := idtrans.DecodeMerged(dashed)
+		Expect(ok).To(BeTrue())
+		Expect(ct).To(Equal("tvshows"))
+	})
 })

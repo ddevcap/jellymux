@@ -1,6 +1,7 @@
 package handler_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -247,7 +248,7 @@ var _ = Describe("SystemHandler", func() {
 		})
 	})
 
-	// ── Missing system stubs ──────────────────────────────────────────────────
+	// ── Missing system stubs ─────────────────────────────────────────────────────
 
 	Describe("BrandingCss", func() {
 		It("returns 200 with text/css content type", func() {
@@ -322,6 +323,106 @@ var _ = Describe("SystemHandler", func() {
 			var body []interface{}
 			Expect(json.Unmarshal(w.Body.Bytes(), &body)).To(Succeed())
 			Expect(body).To(BeEmpty())
+		})
+	})
+
+	Describe("QuickConnectInitiate", func() {
+		It("returns 401 with an error message", func() {
+			w := serve("POST", "/quickconnect/initiate", h.QuickConnectInitiate, "/quickconnect/initiate")
+			Expect(w.Code).To(Equal(http.StatusUnauthorized))
+			var body map[string]interface{}
+			Expect(json.Unmarshal(w.Body.Bytes(), &body)).To(Succeed())
+			Expect(body["error"]).To(ContainSubstring("not enabled"))
+		})
+	})
+
+	Describe("ClientLogDocument", func() {
+		It("returns 200", func() {
+			w := serve("POST", "/clientlog/document", h.ClientLogDocument, "/clientlog/document")
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+	})
+
+	Describe("HealthReady", func() {
+		It("returns 200 when the DB is available", func() {
+			hWithDB := handler.NewSystemHandler(config.Config{}, db, nil)
+			r := gin.New()
+			r.GET("/ready", hWithDB.HealthReady)
+			req, _ := http.NewRequest("GET", "/ready", nil)
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+			Expect(w.Code).To(Equal(http.StatusOK))
+			var body map[string]interface{}
+			Expect(json.Unmarshal(w.Body.Bytes(), &body)).To(Succeed())
+			Expect(body["status"]).To(Equal("ready"))
+		})
+	})
+
+	Describe("DisplayPreferences round-trip", func() {
+		It("stores and retrieves preferences when a user is in context", func() {
+			cleanDB()
+			user := createUser("dispprefs-user", "pass", false)
+			hWithDB := handler.NewSystemHandler(config.Config{}, db, nil)
+
+			r := gin.New()
+			r.Use(func(c *gin.Context) {
+				c.Set("user", user)
+				c.Next()
+			})
+			r.POST("/displaypreferences/:id", hWithDB.DisplayPreferencesUpdate)
+			r.GET("/displaypreferences/:id", hWithDB.DisplayPreferencesGet)
+
+			// Store prefs
+			body := []byte(`{"Id":"usersettings","SortBy":"Name","CustomPrefs":{"theme":"dark"}}`)
+			req, _ := http.NewRequest("POST", "/displaypreferences/usersettings?client=emby", bytes.NewReader(body))
+			req.Header.Set("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+			Expect(w.Code).To(Equal(http.StatusNoContent))
+
+			// Retrieve prefs
+			req2, _ := http.NewRequest("GET", "/displaypreferences/usersettings?client=emby", nil)
+			w2 := httptest.NewRecorder()
+			r.ServeHTTP(w2, req2)
+			Expect(w2.Code).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			Expect(json.Unmarshal(w2.Body.Bytes(), &result)).To(Succeed())
+			Expect(result["SortBy"]).To(Equal("Name"))
+		})
+
+		It("returns defaults when no user in context", func() {
+			hWithDB := handler.NewSystemHandler(config.Config{}, db, nil)
+			r := gin.New()
+			r.GET("/displaypreferences/:id", hWithDB.DisplayPreferencesGet)
+			req, _ := http.NewRequest("GET", "/displaypreferences/usersettings", nil)
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+			Expect(w.Code).To(Equal(http.StatusOK))
+			var result map[string]interface{}
+			Expect(json.Unmarshal(w.Body.Bytes(), &result)).To(Succeed())
+			Expect(result["Id"]).To(Equal("usersettings"))
+		})
+
+		It("returns NoContent for update with empty body and no user", func() {
+			hWithDB := handler.NewSystemHandler(config.Config{}, db, nil)
+			r := gin.New()
+			r.POST("/displaypreferences/:id", hWithDB.DisplayPreferencesUpdate)
+			req, _ := http.NewRequest("POST", "/displaypreferences/any", nil)
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+			Expect(w.Code).To(Equal(http.StatusNoContent))
+		})
+	})
+
+	Describe("BitrateTest (negative size)", func() {
+		It("uses the default when Size is negative", func() {
+			r := gin.New()
+			r.GET("/playback/bitratetest", h.BitrateTest)
+			req, _ := http.NewRequest("GET", "/playback/bitratetest?Size=-1", nil)
+			w := httptest.NewRecorder()
+			r.ServeHTTP(w, req)
+			Expect(w.Code).To(Equal(http.StatusOK))
+			Expect(w.Body.Len()).To(Equal(102400))
 		})
 	})
 })

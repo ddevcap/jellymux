@@ -67,9 +67,9 @@ func (h *AuthHandler) AuthenticateByName(c *gin.Context) {
 
 	// Extract Jellyfin client identity from the Authorization header.
 	authParams := middleware.ParseMediaBrowserAuth(c.GetHeader("Authorization"))
-	deviceID := fallback(authParams["DeviceId"], "unknown")
-	deviceName := fallback(authParams["Device"], "Unknown Device")
-	appName := fallback(authParams["Client"], "Unknown")
+	deviceID := Fallback(authParams["DeviceId"], "unknown")
+	deviceName := Fallback(authParams["Device"], "Unknown Device")
+	appName := Fallback(authParams["Client"], "Unknown")
 	appVersion := authParams["Version"]
 
 	token := strings.ReplaceAll(uuid.New().String(), "-", "")
@@ -78,7 +78,7 @@ func (h *AuthHandler) AuthenticateByName(c *gin.Context) {
 		SetDeviceID(deviceID).
 		SetDeviceName(deviceName).
 		SetAppName(appName).
-		SetNillableAppVersion(nilIfEmpty(appVersion)).
+		SetNillableAppVersion(NilIfEmpty(appVersion)).
 		SetUser(user).
 		Save(c.Request.Context())
 	if err != nil {
@@ -87,7 +87,7 @@ func (h *AuthHandler) AuthenticateByName(c *gin.Context) {
 	}
 
 	now := time.Now().UTC()
-	userObj := buildUserObject(user, h.cfg)
+	userObj := BuildUserObject(user, h.cfg)
 	userObj["LastLoginDate"] = now
 	userObj["LastActivityDate"] = now
 

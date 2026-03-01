@@ -62,7 +62,7 @@ var _ = Describe("ServerClient", func() {
 		pool = backend.NewPool(db, config.Config{ServerID: proxyServerID})
 	})
 
-	// ── Pure-function tests ──────────────────────────────────────────
+	// ── Pure-function tests ──────────────────────────────────────────────────────
 
 	Describe("DirectURL", func() {
 		It("builds a full URL with ApiKey injected", func() {
@@ -92,7 +92,7 @@ var _ = Describe("ServerClient", func() {
 		})
 	})
 
-	// ── ProxyJSON ────────────────────────────────────────────────────
+	// ── ProxyJSON ────────────────────────────────────────────────────────────────
 
 	Describe("ProxyJSON", func() {
 		It("rewrites IDs in a 200 JSON response", func() {
@@ -207,7 +207,7 @@ var _ = Describe("ServerClient", func() {
 		})
 	})
 
-	// ── ProxyRaw ─────────────────────────────────────────────────────
+	// ── ProxyRaw ─────────────────────────────────────────────────────────────────
 
 	Describe("ProxyRaw", func() {
 		It("returns the raw body without ID rewriting", func() {
@@ -254,7 +254,7 @@ var _ = Describe("ServerClient", func() {
 		})
 	})
 
-	// ── ProxyStream ──────────────────────────────────────────────────
+	// ── ProxyStream ──────────────────────────────────────────────────────────────
 
 	Describe("ProxyStream", func() {
 		It("streams response body to the writer", func() {

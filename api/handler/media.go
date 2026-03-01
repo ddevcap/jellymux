@@ -50,7 +50,7 @@ func NewMediaHandler(pool *backend.Pool, cfg config.Config, db *ent.Client) *Med
 	return &MediaHandler{pool: pool, cfg: cfg, db: db, viewCache: newViewCache()}
 }
 
-// ── context helpers ───────────────────────────────────────────────────────────
+// ── context helpers ──────────────────────────────────────────────────────────
 
 // tryResolveUser attempts to resolve the proxy user from the request's token
 // (X-Emby-Token header, api_key query param, etc.) without requiring the Auth
@@ -82,15 +82,15 @@ func (h *MediaHandler) tryResolveUser(c *gin.Context) *ent.User {
 	return nil
 }
 
-// ── query-param forwarding ────────────────────────────────────────────────────
+// ── query-param forwarding ───────────────────────────────────────────────────
 
-// forwardQuery translates a client's query params into params safe to send to a
+// ForwardQuery translates a client's query params into params safe to send to a
 // backend server:
 //   - UserId is replaced with the backend user ID
 //   - Known single-ID params are decoded (proxy prefix stripped)
 //   - "Ids" (comma-separated) has each entry decoded
 //   - All other params are forwarded unchanged
-func forwardQuery(src url.Values, backendUserID string) url.Values {
+func ForwardQuery(src url.Values, backendUserID string) url.Values {
 	dst := make(url.Values, len(src))
 	for k, vals := range src {
 		kLower := strings.ToLower(k)
@@ -177,7 +177,7 @@ func canonicalKey(k string) string {
 	return k
 }
 
-// ── routing helpers ───────────────────────────────────────────────────────────
+// ── routing helpers ──────────────────────────────────────────────────────────
 
 // routeByID decodes a proxy item ID, resolves the backend server client with
 // the authenticated user's credentials, and returns both the client and the
@@ -230,10 +230,10 @@ func queryParam(c *gin.Context, name string) string {
 	return ""
 }
 
-// serverIDFromQuery extracts the backend server ID (or full merged virtual ID)
+// ServerIDFromQuery extracts the backend server ID (or full merged virtual ID)
 // from the parentid or ids query param (case-insensitive).
 // Returns the full ID string when it is a merged virtual ID.
-func serverIDFromQuery(c *gin.Context) string {
+func ServerIDFromQuery(c *gin.Context) string {
 	if pid := queryParam(c, "parentid"); pid != "" {
 		if _, ok := idtrans.DecodeMerged(pid); ok {
 			return pid
@@ -252,7 +252,7 @@ func serverIDFromQuery(c *gin.Context) string {
 	return ""
 }
 
-// ── response helpers ──────────────────────────────────────────────────────────
+// ── response helpers ─────────────────────────────────────────────────────────
 
 func writeJSON(c *gin.Context, body []byte, status int) {
 	c.Data(status, "application/json", body)
@@ -274,8 +274,8 @@ func redirectStream(c *gin.Context, sc *backend.ServerClient, path string, query
 	c.Redirect(http.StatusFound, sc.DirectURL(path, query))
 }
 
-// rewriteBaseURL replaces backendBaseURL with proxyBaseURL in body.
-func rewriteBaseURL(body []byte, backendBaseURL, proxyBaseURL string) []byte {
+// RewriteBaseURL replaces backendBaseURL with proxyBaseURL in body.
+func RewriteBaseURL(body []byte, backendBaseURL, proxyBaseURL string) []byte {
 	backendBaseURL = strings.TrimRight(backendBaseURL, "/")
 	proxyBaseURL = strings.TrimRight(proxyBaseURL, "/")
 	if backendBaseURL == "" || backendBaseURL == proxyBaseURL {
@@ -284,8 +284,8 @@ func rewriteBaseURL(body []byte, backendBaseURL, proxyBaseURL string) []byte {
 	return bytes.ReplaceAll(body, []byte(backendBaseURL), []byte(proxyBaseURL))
 }
 
-// toUUIDForm inserts dashes into a 32-char hex ID.
-func toUUIDForm(id string) string {
+// ToUUIDForm inserts dashes into a 32-char hex ID.
+func ToUUIDForm(id string) string {
 	if len(id) != 32 {
 		return id
 	}
@@ -306,7 +306,7 @@ func toUUIDForm(id string) string {
 // idtrans.RewriteResponse has already encoded.
 func rewritePlaybackInfoURLs(body []byte, backendID, proxyID, backendBase, proxyBase string) []byte {
 	// 1. Replace backend host with proxy host
-	body = rewriteBaseURL(body, backendBase, proxyBase)
+	body = RewriteBaseURL(body, backendBase, proxyBase)
 
 	// 2. Replace bare backend item ID in URL path/query contexts only.
 	//    Use delimiter-bounded replacement to avoid touching JSON fields.
@@ -319,7 +319,7 @@ func rewritePlaybackInfoURLs(body []byte, backendID, proxyID, backendBase, proxy
 		{"=", "\\u0026"}, // JSON-escaped &
 		{"=", "}"},
 	}
-	uuidForm := toUUIDForm(backendID)
+	uuidForm := ToUUIDForm(backendID)
 	for _, d := range urlDelimiters {
 		// Plain hex form
 		old := d[0] + backendID + d[1]
@@ -423,12 +423,12 @@ func injectProxyToken(body []byte, token string) []byte {
 	return body
 }
 
-// ── user policy & object ──────────────────────────────────────────────────────
+// ── user policy & object ─────────────────────────────────────────────────────
 
-// buildUserPolicy returns the Jellyfin Policy object for a proxy user.
+// BuildUserPolicy returns the Jellyfin Policy object for a proxy user.
 // Centralised so the same policy shape is returned from both the login
 // response (AuthenticateByName) and the user-object endpoints.
-func buildUserPolicy(isAdmin bool, directStream bool, cfg config.Config) gin.H {
+func BuildUserPolicy(isAdmin bool, directStream bool, cfg config.Config) gin.H {
 	return gin.H{
 		"IsAdministrator":                  isAdmin,
 		"IsHidden":                         !isAdmin,
@@ -476,8 +476,8 @@ func buildUserPolicy(isAdmin bool, directStream bool, cfg config.Config) gin.H {
 	}
 }
 
-// buildUserObject returns the Jellyfin user object for a proxy user.
-func buildUserObject(user *ent.User, cfg config.Config) gin.H {
+// BuildUserObject returns the Jellyfin user object for a proxy user.
+func BuildUserObject(user *ent.User, cfg config.Config) gin.H {
 	obj := gin.H{
 		"Name":                      user.Username,
 		"ServerName":                cfg.ServerName,
@@ -506,7 +506,7 @@ func buildUserObject(user *ent.User, cfg config.Config) gin.H {
 			// Jellyfin clients. Hardcoded to match the official Jellyfin server.
 			"CastReceiverId": "F007D354",
 		},
-		"Policy": buildUserPolicy(user.IsAdmin, user.DirectStream, cfg),
+		"Policy": BuildUserPolicy(user.IsAdmin, user.DirectStream, cfg),
 	}
 	if user.Avatar != nil && len(*user.Avatar) > 0 {
 		sum := sha256.Sum256(*user.Avatar)
@@ -515,7 +515,7 @@ func buildUserObject(user *ent.User, cfg config.Config) gin.H {
 	return obj
 }
 
-// ── collection type mapping ───────────────────────────────────────────────────
+// ── collection type mapping ──────────────────────────────────────────────────
 
 // collectionTypeMeta holds the Jellyfin IncludeItemTypes value and display name
 // for a given CollectionType string. Centralises the mapping so it is defined
@@ -537,9 +537,9 @@ var collectionTypes = map[string]collectionTypeMeta{
 	"livetv":      {itemType: "liveTvchannel", displayName: "Live TV"},
 }
 
-// collectionTypeToItemType maps CollectionType to IncludeItemTypes
+// CollectionTypeToItemType maps CollectionType to IncludeItemTypes
 // (e.g. "movies" → "movie").
-func collectionTypeToItemType(ct string) string {
+func CollectionTypeToItemType(ct string) string {
 	if m, ok := collectionTypes[ct]; ok {
 		return m.itemType
 	}

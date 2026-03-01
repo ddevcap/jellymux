@@ -36,8 +36,16 @@ func viewsRouter() *gin.Engine {
 	priv.GET("/users/:userId/items/latest", mediaH.GetLatestItems)
 	priv.GET("/users/:userId/items/resume", mediaH.GetResumeItems)
 	priv.GET("/users/:userId/items/:itemId", mediaH.GetUserItem)
+	priv.GET("/users/:userId/items/:itemId/localtrailers", mediaH.GetLocalTrailers)
+	priv.GET("/users/:userId/items/:itemId/intros", mediaH.GetIntros)
 	priv.GET("/items", mediaH.GetItems)
 	priv.GET("/items/:itemId", mediaH.GetItem)
+	priv.GET("/items/:itemId/children", mediaH.GetItemChildren)
+	priv.GET("/items/:itemId/specialfeatures", mediaH.GetSpecialFeatures)
+	priv.GET("/items/:itemId/thememedia", mediaH.GetThemeMedia)
+	priv.POST("/items/:itemId", mediaH.UpdateItem)
+	priv.DELETE("/items/:itemId", mediaH.DeleteItem)
+	priv.POST("/items/:itemId/refresh", mediaH.RefreshItem)
 	priv.GET("/items/filters", mediaH.GetQueryFilters)
 	priv.GET("/items/filters2", mediaH.GetQueryFilters)
 	priv.GET("/items/counts", mediaH.GetItemCounts)
@@ -67,7 +75,7 @@ func auth() map[string]string {
 	return map[string]string{"X-Emby-Token": viewsToken}
 }
 
-// ── GetViews / mergedViews ────────────────────────────────────────────────────
+// ── GetViews / mergedViews ───────────────────────────────────────────────────
 
 var _ = Describe("Merged library views", func() {
 	var router *gin.Engine
@@ -163,9 +171,29 @@ var _ = Describe("Merged library views", func() {
 				Expect(w.Code).To(Equal(http.StatusUnauthorized))
 			})
 		})
+
+		Context("caching behaviour", func() {
+			It("returns cached views on the second call", func() {
+				fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = fmt.Fprint(w, `{"Items":[{"Id":"lib-1","Name":"Music","CollectionType":"music"}],"TotalRecordCount":1}`)
+				}))
+				defer fake.Close()
+				registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+				// First call populates cache
+				w1 := doGet(router, "/users/ignored/views", auth())
+				Expect(w1.Code).To(Equal(http.StatusOK))
+
+				// Second call hits cache
+				w2 := doGet(router, "/users/ignored/views", auth())
+				Expect(w2.Code).To(Equal(http.StatusOK))
+				Expect(w2.Body.String()).To(Equal(w1.Body.String()))
+			})
+		})
 	})
 
-	// ── GetItem with merged virtual ID ────────────────────────────────────────
+	// ── GetItem with merged virtual ID ───────────────────────────────────────────
 
 	Describe("GetItem", func() {
 		Context("when the item ID is a merged virtual ID", func() {
@@ -223,7 +251,7 @@ var _ = Describe("Merged library views", func() {
 		})
 	})
 
-	// ── GetUserItem ──────────────────────────────────────────────────────────
+	// ── GetUserItem ──────────────────────────────────────────────────────────────
 
 	Describe("GetUserItem", func() {
 		Context("when the item ID is a merged virtual ID", func() {
@@ -254,7 +282,7 @@ var _ = Describe("Merged library views", func() {
 		})
 	})
 
-	// ── GetItems ──────────────────────────────────────────────────────────────
+	// ── GetItems ─────────────────────────────────────────────────────────────────
 
 	Describe("GetItems", func() {
 		Context("with a merged parentId", func() {
@@ -339,9 +367,26 @@ var _ = Describe("Merged library views", func() {
 				Expect(resp["TotalRecordCount"]).To(BeNumerically("==", 1))
 			})
 		})
+
+		Context("with an Ids query param (serverIDFromQuery ids branch)", func() {
+			It("routes to the correct backend based on the first ID", func() {
+				fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					w.Header().Set("Content-Type", "application/json")
+					_, _ = fmt.Fprint(w, `{"Items":[{"Id":"item1","Name":"Item"}],"TotalRecordCount":1,"StartIndex":0}`)
+				}))
+				defer fakeBackend.Close()
+
+				registerViewsBackend("Backend A", fakeBackend.URL, "ba", "user-ba")
+
+				id1 := idtrans.Encode("ba", "item1")
+				id2 := idtrans.Encode("ba", "item2")
+				w := doGet(router, "/items?Ids="+id1+","+id2, auth())
+				Expect(w.Code).To(Equal(http.StatusOK))
+			})
+		})
 	})
 
-	// ── GetUserItems ──────────────────────────────────────────────────────────
+	// ── GetUserItems ─────────────────────────────────────────────────────────────
 
 	Describe("GetUserItems", func() {
 		Context("with a merged parentId", func() {
@@ -384,7 +429,7 @@ var _ = Describe("Merged library views", func() {
 		})
 	})
 
-	// ── GetLatestItems ────────────────────────────────────────────────────────
+	// ── GetLatestItems ───────────────────────────────────────────────────────────
 
 	Describe("GetLatestItems", func() {
 		Context("with a merged parentId", func() {
@@ -444,7 +489,7 @@ var _ = Describe("Merged library views", func() {
 		})
 	})
 
-	// ── GetQueryFilters ───────────────────────────────────────────────────────
+	// ── GetQueryFilters ──────────────────────────────────────────────────────────
 
 	Describe("GetQueryFilters", func() {
 		Context("with a merged parentId", func() {
@@ -582,7 +627,7 @@ var _ = Describe("Merged library views", func() {
 		})
 	})
 
-	// ── GetItemCounts ─────────────────────────────────────────────────────────
+	// ── GetItemCounts ────────────────────────────────────────────────────────────
 
 	Describe("GetItemCounts", func() {
 		Context("with two backends", func() {
@@ -625,7 +670,7 @@ var _ = Describe("Merged library views", func() {
 		})
 	})
 
-	// ── GetSuggestedItems ─────────────────────────────────────────────────────
+	// ── GetSuggestedItems ────────────────────────────────────────────────────────
 
 	Describe("GetSuggestedItems", func() {
 		Context("with a single backend", func() {
@@ -649,7 +694,7 @@ var _ = Describe("Merged library views", func() {
 		})
 	})
 
-	// ── collectionTypeToItemType / mergedDisplayName ──────────────────────────
+	// ── collectionTypeToItemType / mergedDisplayName ─────────────────────────────
 
 	Describe("collectionTypes mapping (integration)", func() {
 		It("returns correct display names for all known collection types", func() {
@@ -730,7 +775,7 @@ var _ = Describe("Merged library views", func() {
 		})
 	})
 
-	// ── GetResumeItems ────────────────────────────────────────────────────────
+	// ── GetResumeItems ───────────────────────────────────────────────────────────
 
 	Describe("GetResumeItems", func() {
 		Context("with two backends", func() {
@@ -760,7 +805,7 @@ var _ = Describe("Merged library views", func() {
 		})
 	})
 
-	// ── Encode/Decode round-trip via GetViews → GetItems ─────────────────────
+	// ── Encode/Decode round-trip via GetViews → GetItems ─────────────────────────
 
 	Describe("End-to-end merged flow", func() {
 		It("GetViews returns merged_movies, then GetItems with that ID returns items from both backends", func() {
@@ -820,7 +865,7 @@ var _ = Describe("Merged library views", func() {
 		})
 	})
 
-	// ── GetPlaybackInfo URL rewriting ─────────────────────────────────────────
+	// ── GetPlaybackInfo URL rewriting ────────────────────────────────────────────
 
 	Describe("GetPlaybackInfo", func() {
 		const backendItemID = "41950bcbdaad6e204085bfae8d0c09b2"
@@ -911,6 +956,407 @@ var _ = Describe("Merged library views", func() {
 				// MediaSourceId should still be present and rewritten.
 				Expect(transURL).To(ContainSubstring("MediaSourceId=" + proxyItemID))
 			})
+		})
+	})
+})
+
+// ── GetUserViews (alias endpoint) ────────────────────────────────────────────
+
+var _ = Describe("GetUserViews", func() {
+	var router *gin.Engine
+
+	BeforeEach(func() {
+		cleanDB()
+		u := createUser("viewsuser2", "password1!", false)
+		createSession(u, viewsToken)
+		router = viewsRouter()
+	})
+
+	It("returns the same merged views as /users/:userId/views", func() {
+		fakeA := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprint(w, `{"Items":[{"Id":"lib-a1","Name":"TV A","CollectionType":"tvshows"}],"TotalRecordCount":1}`)
+		}))
+		defer fakeA.Close()
+
+		registerViewsBackend("Backend A", fakeA.URL, "ba", "user-ba")
+
+		w := doGet(router, "/userviews", auth())
+		Expect(w.Code).To(Equal(http.StatusOK))
+
+		var resp map[string]interface{}
+		Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
+		Expect(resp["Items"]).NotTo(BeEmpty())
+	})
+
+	It("caches and returns cached views", func() {
+		fakeA := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Content-Type", "application/json")
+			_, _ = fmt.Fprint(w, `{"Items":[{"Id":"lib-a1","Name":"Music","CollectionType":"music"}],"TotalRecordCount":1}`)
+		}))
+		defer fakeA.Close()
+
+		registerViewsBackend("Backend A", fakeA.URL, "ba", "user-ba")
+
+		// First call populates cache
+		w1 := doGet(router, "/userviews", auth())
+		Expect(w1.Code).To(Equal(http.StatusOK))
+
+		// Second call hits cache
+		w2 := doGet(router, "/userviews", auth())
+		Expect(w2.Code).To(Equal(http.StatusOK))
+		Expect(w2.Body.String()).To(Equal(w1.Body.String()))
+	})
+})
+
+// ── GetUser / GetUsers ───────────────────────────────────────────────────────
+
+var _ = Describe("GetUser and GetUsers", func() {
+	var router *gin.Engine
+
+	BeforeEach(func() {
+		cleanDB()
+		u := createUser("usertest", "password1!", false)
+		createSession(u, viewsToken)
+
+		cfg := config.Config{ServerID: "test-server-id", ServerName: "Test Proxy"}
+		pool := backend.NewPool(db, cfg)
+		mediaH := handler.NewMediaHandler(pool, cfg, db)
+
+		r := gin.New()
+		priv := r.Group("/")
+		priv.Use(middleware.Auth(db, cfg))
+		priv.GET("/users/:userId", mediaH.GetUser)
+		priv.GET("/users", mediaH.GetUsers)
+		router = r
+	})
+
+	Describe("GetUser", func() {
+		It("returns the authenticated user's profile", func() {
+			w := doGet(router, "/users/ignored", auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+
+			var resp map[string]interface{}
+			Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
+			Expect(resp["Name"]).To(Equal("usertest"))
+			Expect(resp).To(HaveKey("Policy"))
+			Expect(resp).To(HaveKey("Configuration"))
+		})
+	})
+
+	Describe("GetUsers", func() {
+		It("returns all proxy users", func() {
+			// Create a second user
+			createUser("usertest2", "password2!", true)
+
+			w := doGet(router, "/users", auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+
+			var resp []interface{}
+			Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
+			Expect(resp).To(HaveLen(2))
+		})
+	})
+})
+
+// ── Media Items endpoints ────────────────────────────────────────────────────
+
+var _ = Describe("Media Items endpoints", func() {
+	var router *gin.Engine
+
+	BeforeEach(func() {
+		cleanDB()
+		u := createUser("itemsuser", "password1!", false)
+		createSession(u, viewsToken)
+		router = viewsRouter()
+	})
+
+	Describe("GetUserItems", func() {
+		It("returns empty list without parentid or searchterm", func() {
+			w := doGet(router, "/users/ignored/items", auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+			var resp map[string]interface{}
+			Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
+			Expect(resp["TotalRecordCount"]).To(BeEquivalentTo(0))
+		})
+
+		It("fans out search to all backends when searchterm is present", func() {
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprint(w, `{"Items":[{"Id":"match1","Name":"Movie"}],"TotalRecordCount":1}`)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			w := doGet(router, "/users/ignored/items?SearchTerm=Movie", auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+
+		It("fans out to all backends with merged parentid", func() {
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprint(w, `{"Items":[{"Id":"item1","Name":"Movie"}],"TotalRecordCount":1}`)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			mergedID := idtrans.EncodeMerged("movies")
+			w := doGet(router, "/users/ignored/items?ParentId="+mergedID, auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+
+		It("routes to single backend with valid parentid", func() {
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprint(w, `{"Items":[{"Id":"abc","Name":"Show"}],"TotalRecordCount":1}`)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			parentID := idtrans.Encode("ba", "lib-1")
+			w := doGet(router, "/users/ignored/items?ParentId="+parentID, auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+
+		It("returns 400 for invalid parentid", func() {
+			w := doGet(router, "/users/ignored/items?ParentId=invalid", auth())
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	Describe("GetLatestItems", func() {
+		It("fans out to all backends with merged parentid", func() {
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprint(w, `[{"Id":"item1","Name":"Latest Movie","DateCreated":"2026-01-01T00:00:00Z"}]`)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			mergedID := idtrans.EncodeMerged("movies")
+			w := doGet(router, "/users/ignored/items/latest?ParentId="+mergedID, auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+
+		It("fans out without parentid (Android TV path)", func() {
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprint(w, `[{"Id":"item1","Name":"Latest","DateCreated":"2026-01-01T00:00:00Z"}]`)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			w := doGet(router, "/users/ignored/items/latest", auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+
+		It("routes to single backend with valid parentid", func() {
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprint(w, `[{"Id":"item1","Name":"Latest"}]`)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			parentID := idtrans.Encode("ba", "lib-1")
+			w := doGet(router, "/users/ignored/items/latest?ParentId="+parentID, auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+
+		It("returns 400 for invalid parentid", func() {
+			w := doGet(router, "/users/ignored/items/latest?ParentId=invalid", auth())
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	Describe("GetUserItem", func() {
+		It("returns synthetic item for merged virtual library ID", func() {
+			mergedID := idtrans.EncodeMerged("movies")
+			w := doGet(router, "/users/ignored/items/"+mergedID, auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+			var resp map[string]interface{}
+			Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
+			Expect(resp["Type"]).To(Equal("CollectionFolder"))
+			Expect(resp["CollectionType"]).To(Equal("movies"))
+		})
+
+		It("proxies to backend for regular item", func() {
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprint(w, `{"Id":"abc","Name":"My Movie","Type":"Movie"}`)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			proxyID := idtrans.Encode("ba", "abc")
+			w := doGet(router, "/users/ignored/items/"+proxyID, auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+
+		It("returns 400 for invalid item ID", func() {
+			w := doGet(router, "/users/ignored/items/invalid-id", auth())
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	Describe("UpdateItem", func() {
+		It("proxies the update to the backend", func() {
+			var receivedPath string
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				receivedPath = r.URL.Path
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusNoContent)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			proxyID := idtrans.Encode("ba", "item1")
+			w := doPost(router, "/items/"+proxyID, map[string]interface{}{"Name": "Updated"}, auth())
+			Expect(w.Code).To(Equal(http.StatusNoContent))
+			Expect(receivedPath).To(Equal("/items/item1"))
+		})
+
+		It("returns 400 for invalid item ID", func() {
+			w := doPost(router, "/items/invalid-id", map[string]interface{}{}, auth())
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	Describe("DeleteItem", func() {
+		It("proxies the delete to the backend", func() {
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusNoContent)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			proxyID := idtrans.Encode("ba", "item1")
+			w := doDelete(router, "/items/"+proxyID, auth())
+			Expect(w.Code).To(Equal(http.StatusNoContent))
+		})
+
+		It("returns 400 for invalid item ID", func() {
+			w := doDelete(router, "/items/invalid-id", auth())
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	Describe("RefreshItem", func() {
+		It("proxies the refresh to the backend", func() {
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.WriteHeader(http.StatusNoContent)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			proxyID := idtrans.Encode("ba", "item1")
+			w := doPost(router, "/items/"+proxyID+"/refresh", map[string]interface{}{}, auth())
+			Expect(w.Code).To(Equal(http.StatusNoContent))
+		})
+
+		It("returns 400 for invalid item ID", func() {
+			w := doPost(router, "/items/invalid-id/refresh", map[string]interface{}{}, auth())
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	Describe("GetLocalTrailers", func() {
+		It("proxies to the backend", func() {
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprint(w, `[{"Id":"trailer1","Name":"Trailer"}]`)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			proxyID := idtrans.Encode("ba", "item1")
+			w := doGet(router, "/users/ignored/items/"+proxyID+"/localtrailers", auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+
+		It("returns 400 for invalid item ID", func() {
+			w := doGet(router, "/users/ignored/items/invalid-id/localtrailers", auth())
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	Describe("GetIntros", func() {
+		It("proxies to the backend", func() {
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprint(w, `{"Items":[],"TotalRecordCount":0}`)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			proxyID := idtrans.Encode("ba", "item1")
+			w := doGet(router, "/users/ignored/items/"+proxyID+"/intros", auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+
+		It("returns 400 for invalid item ID", func() {
+			w := doGet(router, "/users/ignored/items/invalid-id/intros", auth())
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	Describe("GetItemChildren", func() {
+		It("proxies to the backend", func() {
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprint(w, `{"Items":[],"TotalRecordCount":0}`)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			proxyID := idtrans.Encode("ba", "item1")
+			w := doGet(router, "/items/"+proxyID+"/children", auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+	})
+
+	Describe("GetSpecialFeatures", func() {
+		It("proxies to the backend", func() {
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprint(w, `[]`)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			proxyID := idtrans.Encode("ba", "item1")
+			w := doGet(router, "/items/"+proxyID+"/specialfeatures", auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+	})
+
+	Describe("GetThemeMedia", func() {
+		It("proxies to the backend", func() {
+			fake := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = fmt.Fprint(w, `{}`)
+			}))
+			defer fake.Close()
+			registerViewsBackend("Backend", fake.URL, "ba", "user-ba")
+
+			proxyID := idtrans.Encode("ba", "item1")
+			w := doGet(router, "/items/"+proxyID+"/thememedia", auth())
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+	})
+
+	Describe("backend connection error (gatewayError path)", func() {
+		It("returns 502 when the backend is unreachable", func() {
+			// Create a server and immediately close it so the URL is unreachable
+			dead := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {}))
+			deadURL := dead.URL
+			dead.Close()
+
+			registerViewsBackend("Dead Backend", deadURL, "dead", "user-dead")
+
+			proxyID := idtrans.Encode("dead", "item1")
+			w := doGet(router, "/items/"+proxyID, auth())
+			Expect(w.Code).To(Equal(http.StatusBadGateway))
 		})
 	})
 })

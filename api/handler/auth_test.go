@@ -37,7 +37,7 @@ var _ = Describe("AuthHandler", func() {
 		auth.DELETE("/Sessions/Logout", h.Logout)
 	})
 
-	// ── AuthenticateByName ────────────────────────────────────────────────────
+	// ── AuthenticateByName ───────────────────────────────────────────────────────
 
 	Describe("AuthenticateByName", func() {
 		Context("with valid credentials", func() {
@@ -135,7 +135,7 @@ var _ = Describe("AuthHandler", func() {
 		})
 	})
 
-	// ── UpdatePassword ────────────────────────────────────────────────────────
+	// ── UpdatePassword ───────────────────────────────────────────────────────────
 
 	Describe("UpdatePassword", func() {
 		var user *ent.User
@@ -226,9 +226,42 @@ var _ = Describe("AuthHandler", func() {
 				Expect(w.Code).To(Equal(http.StatusUnauthorized))
 			})
 		})
+
+		Context("when NewPw is empty", func() {
+			It("returns 400", func() {
+				w := doPost(router, "/Users/"+user.ID.String()+"/Password",
+					map[string]string{"CurrentPw": "oldpassword1", "NewPw": ""},
+					map[string]string{"X-Emby-Token": "bob-token"},
+				)
+
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
+
+		Context("when the userId in the path is invalid", func() {
+			It("returns 400", func() {
+				w := doPost(router, "/Users/not-a-uuid/Password",
+					map[string]string{"CurrentPw": "oldpassword1", "NewPw": "newpassword1"},
+					map[string]string{"X-Emby-Token": "bob-token"},
+				)
+
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
+
+		Context("when a non-admin targets another user", func() {
+			It("returns 403 regardless of whether the target exists", func() {
+				w := doPost(router, "/Users/00000000-0000-0000-0000-000000000099/Password",
+					map[string]interface{}{"NewPw": "newpassword1"},
+					map[string]string{"X-Emby-Token": "bob-token"},
+				)
+
+				Expect(w.Code).To(Equal(http.StatusForbidden))
+			})
+		})
 	})
 
-	// ── Logout ────────────────────────────────────────────────────────────────
+	// ── Logout ───────────────────────────────────────────────────────────────────
 
 	Describe("Logout", func() {
 		It("returns 204 and invalidates the token so subsequent requests are rejected", func() {

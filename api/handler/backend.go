@@ -33,7 +33,7 @@ func NewBackendHandler(db *ent.Client) *BackendHandler {
 	}
 }
 
-// ── Response shapes ───────────────────────────────────────────────────────────
+// ── Response shapes ──────────────────────────────────────────────────────────
 
 // backendResponse is the outward representation of a backend server.
 // token is intentionally omitted — it is write-only.
@@ -82,7 +82,7 @@ func toBackendUserResponse(bu *ent.BackendUser, backendID uuid.UUID) backendUser
 	return r
 }
 
-// ── Backend CRUD ──────────────────────────────────────────────────────────────
+// ── Backend CRUD ─────────────────────────────────────────────────────────────
 
 type createBackendRequest struct {
 	Name string `json:"name"   binding:"required"`
@@ -262,7 +262,7 @@ func (h *BackendHandler) DeleteBackend(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// ── BackendUser mapping CRUD ──────────────────────────────────────────────────
+// ── BackendUser mapping CRUD ─────────────────────────────────────────────────
 
 type createBackendUserRequest struct {
 	UserID        uuid.UUID `json:"user_id"         binding:"required"`
@@ -286,6 +286,26 @@ func (h *BackendHandler) CreateBackendUser(c *gin.Context) {
 		return
 	}
 
+	// Validate the backend exists.
+	if _, err := h.db.Backend.Get(c.Request.Context(), backendID); err != nil {
+		if ent.IsNotFound(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "backend not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to look up backend"})
+		return
+	}
+
+	// Validate the user exists.
+	if _, err := h.db.User.Get(c.Request.Context(), req.UserID); err != nil {
+		if ent.IsNotFound(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "user not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to look up user"})
+		return
+	}
+
 	bu, err := h.db.BackendUser.Create().
 		SetBackendID(backendID).
 		SetUserID(req.UserID).
@@ -294,17 +314,7 @@ func (h *BackendHandler) CreateBackendUser(c *gin.Context) {
 		Save(c.Request.Context())
 	if err != nil {
 		if ent.IsConstraintError(err) {
-			errStr := err.Error()
-			switch {
-			case strings.Contains(errStr, "backend_users_users_backend_users") ||
-				strings.Contains(errStr, "unique"):
-				c.JSON(http.StatusConflict, gin.H{"error": "user is already mapped to this backend"})
-			case strings.Contains(errStr, "foreign key") ||
-				strings.Contains(errStr, "violates foreign key"):
-				c.JSON(http.StatusUnprocessableEntity, gin.H{"error": "user_id or backend_id does not exist"})
-			default:
-				c.JSON(http.StatusConflict, gin.H{"error": "constraint violation: " + errStr})
-			}
+			c.JSON(http.StatusConflict, gin.H{"error": "user is already mapped to this backend"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create backend user"})
@@ -329,6 +339,16 @@ func (h *BackendHandler) ListBackendUsers(c *gin.Context) {
 	backendID, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid backend ID"})
+		return
+	}
+
+	// Validate the backend exists.
+	if _, err := h.db.Backend.Get(c.Request.Context(), backendID); err != nil {
+		if ent.IsNotFound(err) {
+			c.JSON(http.StatusNotFound, gin.H{"error": "backend not found"})
+			return
+		}
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to look up backend"})
 		return
 	}
 

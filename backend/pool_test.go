@@ -184,4 +184,46 @@ var _ = Describe("Pool", func() {
 			)
 		})
 	})
+
+	Describe("SetHealthChecker / GetHealthChecker", func() {
+		It("returns nil when no health checker is set", func() {
+			Expect(pool.GetHealthChecker()).To(BeNil())
+		})
+
+		It("returns the health checker after it is set", func() {
+			hc := backend.NewHealthChecker(pool, 0)
+			pool.SetHealthChecker(hc)
+			Expect(pool.GetHealthChecker()).To(Equal(hc))
+			// Clean up
+			pool.SetHealthChecker(nil)
+		})
+	})
+
+	Describe("AllForUser (with health checker)", func() {
+		It("skips backends marked as unavailable by the health checker", func() {
+			b1 := newBackend("Movies", "http://movies:8096", "mov")
+			b2 := newBackend("TV", "http://tv:8096", "tv")
+			u := newUser("healthuser")
+			tok := "tok"
+			newBackendUser(b1, u, "u1", &tok)
+			newBackendUser(b2, u, "u2", &tok)
+
+			// Create a health checker and mark b1 as unavailable
+			hc := backend.NewHealthChecker(pool, 0)
+			pool.SetHealthChecker(hc)
+			defer pool.SetHealthChecker(nil)
+
+			// Record failures for b1 to make it unavailable
+			for i := 0; i < 5; i++ {
+				hc.RecordRequestFailure(b1.ID.String(), "Movies")
+			}
+
+			clients, err := pool.AllForUser(ctx, u)
+			Expect(err).NotTo(HaveOccurred())
+			// Only the healthy backend should be returned
+			for _, c := range clients {
+				Expect(c.ExternalID()).NotTo(Equal("mov"))
+			}
+		})
+	})
 })

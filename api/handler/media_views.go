@@ -27,7 +27,7 @@ func (h *MediaHandler) GetUser(c *gin.Context) {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 		return
 	}
-	c.JSON(http.StatusOK, buildUserObject(user, h.cfg))
+	c.JSON(http.StatusOK, BuildUserObject(user, h.cfg))
 }
 
 // GetViews handles GET /Users/:userId/views.
@@ -68,7 +68,7 @@ func (h *MediaHandler) GetUsers(c *gin.Context) {
 	}
 	resp := make([]gin.H, len(users))
 	for i, u := range users {
-		resp[i] = buildUserObject(u, h.cfg)
+		resp[i] = BuildUserObject(u, h.cfg)
 	}
 	c.JSON(http.StatusOK, resp)
 }

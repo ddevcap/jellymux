@@ -40,7 +40,7 @@ func rewriteRequest(input obj) obj {
 	return out
 }
 
-// ── Encode ────────────────────────────────────────────────────────────────────
+// ── Encode ───────────────────────────────────────────────────────────────────
 
 var _ = Describe("Encode", func() {
 	It("returns a 32-char lowercase hex string (dashless UUID)", func() {
@@ -66,7 +66,7 @@ var _ = Describe("Encode", func() {
 	})
 })
 
-// ── Decode ────────────────────────────────────────────────────────────────────
+// ── Decode ───────────────────────────────────────────────────────────────────
 
 var _ = Describe("Decode", func() {
 	Context("legacy prefix_itemID format", func() {
@@ -103,9 +103,45 @@ var _ = Describe("Decode", func() {
 		Expect(gotServer).To(Equal(serverID))
 		Expect(gotBackend).To(Equal(backendID))
 	})
+
+	It("decodes a dashed UUID (strips dashes before cache lookup)", func() {
+		encoded := idtrans.Encode("s1", "abc123")
+		dashed := encoded[0:8] + "-" + encoded[8:12] + "-" + encoded[12:16] + "-" + encoded[16:20] + "-" + encoded[20:32]
+		gotServer, gotBackend, err := idtrans.Decode(dashed)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(gotServer).To(Equal("s1"))
+		Expect(gotBackend).To(Equal("abc123"))
+	})
+
+	It("returns an error for underscore-only prefix (empty server)", func() {
+		_, _, err := idtrans.Decode("_abc")
+		Expect(err).To(HaveOccurred())
+	})
 })
 
-// ── RewriteResponse ───────────────────────────────────────────────────────────
+// ── DecodeServerID ───────────────────────────────────────────────────────────
+
+var _ = Describe("DecodeServerID", func() {
+	It("returns only the server ID from a legacy prefixed ID", func() {
+		serverID, err := idtrans.DecodeServerID("s1_abc123")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(serverID).To(Equal("s1"))
+	})
+
+	It("returns only the server ID from an encoded UUID", func() {
+		encoded := idtrans.Encode("server-x", "item-y")
+		serverID, err := idtrans.DecodeServerID(encoded)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(serverID).To(Equal("server-x"))
+	})
+
+	It("returns an error for unknown IDs", func() {
+		_, err := idtrans.DecodeServerID("unknownhex")
+		Expect(err).To(HaveOccurred())
+	})
+})
+
+// ── RewriteResponse ──────────────────────────────────────────────────────────
 
 var _ = Describe("RewriteResponse", func() {
 	Context("top-level ID fields", func() {
@@ -255,7 +291,7 @@ var _ = Describe("RewriteResponse", func() {
 	})
 })
 
-// ── RewriteRequest ────────────────────────────────────────────────────────────
+// ── RewriteRequest ───────────────────────────────────────────────────────────
 
 var _ = Describe("RewriteRequest", func() {
 	Context("proxied IDs (UUID format via Encode)", func() {
@@ -292,5 +328,19 @@ var _ = Describe("RewriteRequest", func() {
 
 			Expect(out["Id"]).To(Equal("noprefixhere"))
 		})
+	})
+
+	Context("invalid JSON", func() {
+		It("returns an error", func() {
+			_, err := idtrans.RewriteRequest([]byte(`{invalid`))
+			Expect(err).To(HaveOccurred())
+		})
+	})
+})
+
+var _ = Describe("RewriteResponse (error paths)", func() {
+	It("returns an error for invalid JSON", func() {
+		_, err := idtrans.RewriteResponse([]byte(`{invalid`), "s1", "proxy-id", nil)
+		Expect(err).To(HaveOccurred())
 	})
 })

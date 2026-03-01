@@ -1,6 +1,7 @@
 package middleware_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"time"
@@ -9,6 +10,7 @@ import (
 	. "github.com/onsi/gomega"
 
 	"github.com/gin-gonic/gin"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/ddevcap/jellyfin-proxy/api/middleware"
 	"github.com/ddevcap/jellyfin-proxy/config"
@@ -346,3 +348,158 @@ var _ = Describe("RequestID middleware", func() {
 		Expect(w.Header().Get("X-Request-Id")).To(Equal("my-custom-id"))
 	})
 })
+
+var _ = Describe("ExtractAllTokens", func() {
+	gin.SetMode(gin.TestMode)
+
+	It("returns tokens from all sources", func() {
+		req, _ := http.NewRequest(http.MethodGet, "/?api_key=query1&ApiKey=query2", nil)
+		req.Header.Set("X-Emby-Token", "emby-token")
+		req.Header.Set("X-MediaBrowser-Token", "mb-token")
+		req.Header.Set("Authorization", `MediaBrowser Token="auth-token"`)
+
+		tokens := middleware.ExtractAllTokens(newCtx(req))
+		Expect(tokens).To(ContainElements("emby-token", "mb-token", "auth-token", "query1", "query2"))
+	})
+
+	It("returns empty slice when no tokens present", func() {
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		tokens := middleware.ExtractAllTokens(newCtx(req))
+		Expect(tokens).To(BeEmpty())
+	})
+
+	It("returns only header tokens when no query params", func() {
+		req, _ := http.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("X-Emby-Token", "only-token")
+		tokens := middleware.ExtractAllTokens(newCtx(req))
+		Expect(tokens).To(Equal([]string{"only-token"}))
+	})
+})
+
+var _ = Describe("Auth middleware", func() {
+	gin.SetMode(gin.TestMode)
+
+	var ctx context.Context
+
+	BeforeEach(func() {
+		ctx = context.Background()
+		cleanDB()
+	})
+
+	createUserAndSession := func(username, token string) *ent.User {
+		hash, _ := bcrypt.GenerateFromPassword([]byte("pass"), bcrypt.MinCost)
+		u := db.User.Create().
+			SetUsername(username).
+			SetDisplayName(username).
+			SetHashedPassword(string(hash)).
+			SetIsAdmin(false).
+			SaveX(ctx)
+		db.Session.Create().
+			SetToken(token).
+			SetDeviceID("dev").
+			SetDeviceName("Dev").
+			SetAppName("App").
+			SetUser(u).
+			SaveX(ctx)
+		return u
+	}
+
+	It("allows requests with a valid token", func() {
+		createUserAndSession("authuser", "valid-token")
+
+		r := gin.New()
+		r.Use(middleware.Auth(db, config.Config{}))
+		r.GET("/test", func(c *gin.Context) {
+			u, _ := c.Get(middleware.ContextKeyUser)
+			Expect(u).NotTo(BeNil())
+			Expect(u.(*ent.User).Username).To(Equal("authuser"))
+			c.Status(http.StatusOK)
+		})
+
+		req, _ := http.NewRequest(http.MethodGet, "/test", nil)
+		req.Header.Set("X-Emby-Token", "valid-token")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		Expect(w.Code).To(Equal(http.StatusOK))
+	})
+
+	It("rejects requests with no token", func() {
+		r := gin.New()
+		r.Use(middleware.Auth(db, config.Config{}))
+		r.GET("/test", func(c *gin.Context) { c.Status(http.StatusOK) })
+
+		req, _ := http.NewRequest(http.MethodGet, "/test", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		Expect(w.Code).To(Equal(http.StatusUnauthorized))
+	})
+
+	It("rejects requests with an invalid token", func() {
+		r := gin.New()
+		r.Use(middleware.Auth(db, config.Config{}))
+		r.GET("/test", func(c *gin.Context) { c.Status(http.StatusOK) })
+
+		req, _ := http.NewRequest(http.MethodGet, "/test", nil)
+		req.Header.Set("X-Emby-Token", "bogus")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		Expect(w.Code).To(Equal(http.StatusUnauthorized))
+	})
+
+	It("rejects and deletes expired sessions", func() {
+		u := createUserAndSession("expuser", "expired-token")
+		// Backdate session last_activity
+		db.Session.Update().
+			Where().
+			SetLastActivity(time.Now().Add(-2 * time.Hour)).
+			ExecX(ctx)
+		_ = u
+
+		r := gin.New()
+		r.Use(middleware.Auth(db, config.Config{SessionTTL: time.Hour}))
+		r.GET("/test", func(c *gin.Context) { c.Status(http.StatusOK) })
+
+		req, _ := http.NewRequest(http.MethodGet, "/test", nil)
+		req.Header.Set("X-Emby-Token", "expired-token")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		Expect(w.Code).To(Equal(http.StatusUnauthorized))
+
+		// Session should be deleted
+		count, _ := db.Session.Query().Count(ctx)
+		Expect(count).To(Equal(0))
+	})
+
+	It("debounces last-activity updates", func() {
+		createUserAndSession("debounce-user", "debounce-token")
+
+		r := gin.New()
+		r.Use(middleware.Auth(db, config.Config{}))
+		r.GET("/test", func(c *gin.Context) { c.Status(http.StatusOK) })
+
+		// First request
+		req, _ := http.NewRequest(http.MethodGet, "/test", nil)
+		req.Header.Set("X-Emby-Token", "debounce-token")
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		Expect(w.Code).To(Equal(http.StatusOK))
+	})
+})
+
+var _ = Describe("RequestLogger middleware", func() {
+	gin.SetMode(gin.TestMode)
+
+	It("calls next and completes the request", func() {
+		r := gin.New()
+		r.Use(middleware.RequestID(), middleware.RequestLogger())
+		r.GET("/test", func(c *gin.Context) {
+			c.Status(http.StatusOK)
+		})
+
+		req, _ := http.NewRequest(http.MethodGet, "/test?foo=bar", nil)
+		w := httptest.NewRecorder()
+		r.ServeHTTP(w, req)
+		Expect(w.Code).To(Equal(http.StatusOK))
+	})
+})
+

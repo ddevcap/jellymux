@@ -33,7 +33,7 @@ func (h *MediaHandler) GetPlaybackInfo(c *gin.Context) {
 		}
 	}
 
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	respBody, status, err := sc.ProxyJSON(c.Request.Context(), method,
 		"/items/"+backendID+"/playbackinfo", query, body)
 	if err != nil {
@@ -89,8 +89,8 @@ func (h *MediaHandler) GetImage(c *gin.Context) {
 		path += "/" + idx
 	}
 
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
-	if shouldDirectStream(user, c.ClientIP(), h.cfg) {
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	if ShouldDirectStream(user, c.ClientIP(), h.cfg) {
 		redirectStream(c, sc, path, query)
 		return
 	}
@@ -112,9 +112,9 @@ func (h *MediaHandler) StreamVideo(c *gin.Context) {
 	if container := c.Param("container"); container != "" {
 		path += "." + container
 	}
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 
-	if shouldDirectStream(userFromCtx(c), c.ClientIP(), h.cfg) {
+	if ShouldDirectStream(userFromCtx(c), c.ClientIP(), h.cfg) {
 		redirectStream(c, sc, path, query)
 		return
 	}
@@ -137,10 +137,10 @@ func (h *MediaHandler) HLSMasterPlaylist(c *gin.Context) {
 		playlist = "master.m3u8"
 	}
 	path := "/videos/" + backendID + "/" + playlist
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	setApiKey(query, sc)
 
-	if shouldDirectStream(userFromCtx(c), c.ClientIP(), h.cfg) {
+	if ShouldDirectStream(userFromCtx(c), c.ClientIP(), h.cfg) {
 		redirectStream(c, sc, path, query)
 		return
 	}
@@ -160,10 +160,10 @@ func (h *MediaHandler) HLSSegment(c *gin.Context) {
 	}
 	path := "/videos/" + backendID + c.Param("playSessionId") + "/hls1" +
 		c.Param("segmentId") + "/" + c.Param("segment")
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	setApiKey(query, sc)
 
-	if shouldDirectStream(userFromCtx(c), c.ClientIP(), h.cfg) {
+	if ShouldDirectStream(userFromCtx(c), c.ClientIP(), h.cfg) {
 		redirectStream(c, sc, path, query)
 		return
 	}
@@ -185,9 +185,9 @@ func (h *MediaHandler) StreamAudio(c *gin.Context) {
 	if container := c.Param("container"); container != "" {
 		path += "." + container
 	}
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 
-	if shouldDirectStream(h.tryResolveUser(c), c.ClientIP(), h.cfg) {
+	if ShouldDirectStream(h.tryResolveUser(c), c.ClientIP(), h.cfg) {
 		redirectStream(c, sc, path, query)
 		return
 	}
@@ -204,9 +204,9 @@ func (h *MediaHandler) UniversalAudio(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 
-	if shouldDirectStream(h.tryResolveUser(c), c.ClientIP(), h.cfg) {
+	if ShouldDirectStream(h.tryResolveUser(c), c.ClientIP(), h.cfg) {
 		redirectStream(c, sc, "/audio/"+backendID+"/universal", query)
 		return
 	}
@@ -235,7 +235,7 @@ func (h *MediaHandler) VideoSubpath(c *gin.Context) {
 	trimmed := strings.TrimPrefix(subpath, "/")
 	parts := strings.Split(trimmed, "/")
 
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 
 	// isHLSSegment returns true for paths like /hls1/main/0.mp4 or
 	// /{sessionId}/hls1/{segmentId}/{file}.
@@ -252,7 +252,7 @@ func (h *MediaHandler) VideoSubpath(c *gin.Context) {
 	// In direct-stream mode, redirect all video sub-requests straight to the
 	// backend. The client (on the same network, e.g. Tailscale) fetches bytes
 	// directly without the proxy acting as a middleman.
-	if shouldDirectStream(h.tryResolveUser(c), c.ClientIP(), h.cfg) {
+	if ShouldDirectStream(h.tryResolveUser(c), c.ClientIP(), h.cfg) {
 		// HLS and segments need the ApiKey in the redirect URL.
 		if strings.HasSuffix(parts[0], ".m3u8") || isHLSSegment() {
 			setApiKey(query, sc)
@@ -291,7 +291,7 @@ func (h *MediaHandler) VideoSubpath(c *gin.Context) {
 			return
 		}
 		// Rewrite any absolute backend URLs in the playlist to the proxy URL.
-		body = rewriteBaseURL(body, sc.ServerURL(), h.cfg.ExternalURL)
+		body = RewriteBaseURL(body, sc.ServerURL(), h.cfg.ExternalURL)
 		// Inject the proxy token into every URL in the playlist so that
 		// follow-up requests (main.m3u8, segments) can be authenticated.
 		if proxyToken != "" {
@@ -328,7 +328,7 @@ func (h *MediaHandler) GetSubtitle(c *gin.Context) {
 	_, msBackendID, _ := idtrans.Decode(c.Param("mediaSourceId"))
 	path := "/videos/" + backendID + "/" + msBackendID +
 		"/subtitles/" + c.Param("index") + "/stream." + c.Param("format")
-	q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	_ = sc.ProxyStream(c.Request.Context(), "GET", path, q, c.Request.Header, c.Writer)
 }
 
@@ -402,8 +402,8 @@ func (h *MediaHandler) Download(c *gin.Context) {
 		return
 	}
 	path := "/items/" + backendID + "/download"
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
-	if shouldDirectStream(h.tryResolveUser(c), c.ClientIP(), h.cfg) {
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	if ShouldDirectStream(h.tryResolveUser(c), c.ClientIP(), h.cfg) {
 		redirectStream(c, sc, path, query)
 		return
 	}
@@ -420,7 +420,7 @@ func (h *MediaHandler) Lyrics(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET",
 		"/audio/"+backendID+"/lyrics", query, nil)
 	if err != nil {

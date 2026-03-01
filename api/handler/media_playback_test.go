@@ -58,9 +58,39 @@ func playbackRouter() (*gin.Engine, string) {
 	priv.Use(middleware.Auth(db, cfg))
 	priv.GET("/items/:itemId/playbackinfo", mediaH.GetPlaybackInfo)
 	priv.POST("/items/:itemId/playbackinfo", mediaH.GetPlaybackInfo)
+	priv.POST("/sessions/playing", mediaH.ReportPlaybackStart)
+	priv.POST("/sessions/playing/progress", mediaH.ReportPlaybackProgress)
+	priv.POST("/sessions/playing/stopped", mediaH.ReportPlaybackStopped)
 
 	// Public route — browsers fetch HLS/stream URLs without custom headers.
 	r.GET("/videos/:itemId/*subpath", mediaH.VideoSubpath)
+
+	proxyID := idtrans.Encode(pbPrefix, pbBackendItemID)
+	return r, proxyID
+}
+
+// streamRouter builds a router for testing StreamVideo, StreamAudio, UniversalAudio, GetImage.
+func streamRouter() (*gin.Engine, string) {
+	cfg := config.Config{
+		ServerID:    "test-server-id",
+		ServerName:  "Test Proxy",
+		ExternalURL: "http://proxy:8096",
+	}
+	pool := backend.NewPool(db, cfg)
+	mediaH := handler.NewMediaHandler(pool, cfg, db)
+
+	r := gin.New()
+
+	priv := r.Group("/")
+	priv.Use(middleware.Auth(db, cfg))
+	priv.GET("/videos/:itemId/stream", mediaH.StreamVideo)
+	priv.GET("/audio/:itemId/lyrics", mediaH.Lyrics)
+
+	r.GET("/items/:itemId/images/:imageType", mediaH.GetImage)
+	r.GET("/items/:itemId/images/:imageType/:imageIndex", mediaH.GetImage)
+	r.GET("/audio/:itemId/stream", mediaH.StreamAudio)
+	r.GET("/audio/:itemId/stream.:container", mediaH.StreamAudio)
+	r.GET("/audio/:itemId/universal", mediaH.UniversalAudio)
 
 	proxyID := idtrans.Encode(pbPrefix, pbBackendItemID)
 	return r, proxyID
@@ -268,7 +298,7 @@ var _ = Describe("Playback flow", func() {
 
 	Describe("Phase 2: HLS playlists", func() {
 
-		// ── DirectStream OFF (proxy mode) ────────────────────────────────
+		// ── DirectStream OFF (proxy mode) ────────────────────────────────────────────
 
 		Context("DirectStream OFF", func() {
 			It("resolves user from ApiKey query param and sends backend token to backend", func() {
@@ -359,7 +389,7 @@ var _ = Describe("Playback flow", func() {
 			})
 		})
 
-		// ── direct_stream=true (redirect mode) ───────────────────────────
+		// ── direct_stream=true (redirect mode) ───────────────────────────────────────
 
 		Context("user direct_stream=true", func() {
 			It("302-redirects to backend URL with the backend token", func() {
@@ -416,7 +446,7 @@ var _ = Describe("Playback flow", func() {
 
 	Describe("Phase 3: HLS segments", func() {
 
-		// ── DirectStream OFF ─────────────────────────────────────────────
+		// ── DirectStream OFF ─────────────────────────────────────────────────────────
 
 		Context("DirectStream OFF", func() {
 			It("proxies segments using the backend token (single ApiKey)", func() {
@@ -505,7 +535,7 @@ var _ = Describe("Playback flow", func() {
 			})
 		})
 
-		// ── direct_stream=true ──────────────────────────────────────────
+		// ── direct_stream=true ───────────────────────────────────────────────────────
 
 		Context("user direct_stream=true", func() {
 			It("302-redirects segment requests to the backend with backend token", func() {
@@ -665,6 +695,270 @@ var _ = Describe("Playback flow", func() {
 			)
 
 			Expect(w.Body.String()).NotTo(ContainSubstring(pbBackendToken))
+		})
+	})
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// StreamVideo (authenticated)
+	// ═══════════════════════════════════════════════════════════════════════
+
+	Describe("StreamVideo", func() {
+		It("proxies video stream bytes from the backend", func() {
+			fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				Expect(r.URL.Path).To(Equal("/videos/" + pbBackendItemID + "/stream"))
+				w.Header().Set("Content-Type", "video/mp4")
+				_, _ = fmt.Fprint(w, "video-bytes")
+			}))
+			defer fakeBackend.Close()
+
+			setupPlaybackDB(fakeBackend.URL)
+			router, proxyItemID := streamRouter()
+
+			w := doGet(router, "/videos/"+proxyItemID+"/stream",
+				map[string]string{"X-Emby-Token": pbProxyToken})
+			Expect(w.Code).To(Equal(http.StatusOK))
+			Expect(w.Body.String()).To(Equal("video-bytes"))
+		})
+
+		It("returns 400 for invalid item ID", func() {
+			setupPlaybackDB("http://unused")
+			router, _ := streamRouter()
+
+			w := doGet(router, "/videos/invalid-id/stream",
+				map[string]string{"X-Emby-Token": pbProxyToken})
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// StreamAudio (public)
+	// ═══════════════════════════════════════════════════════════════════════
+
+	Describe("StreamAudio", func() {
+		It("proxies audio stream bytes", func() {
+			fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				Expect(r.URL.Path).To(Equal("/audio/" + pbBackendItemID + "/stream"))
+				w.Header().Set("Content-Type", "audio/mp4")
+				_, _ = fmt.Fprint(w, "audio-bytes")
+			}))
+			defer fakeBackend.Close()
+
+			setupPlaybackDB(fakeBackend.URL)
+			router, proxyItemID := streamRouter()
+
+			w := doGet(router, "/audio/"+proxyItemID+"/stream?api_key="+pbProxyToken)
+			Expect(w.Code).To(Equal(http.StatusOK))
+			Expect(w.Body.String()).To(Equal("audio-bytes"))
+		})
+
+		It("handles stream with container extension", func() {
+			fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				Expect(r.URL.Path).To(Equal("/audio/" + pbBackendItemID + "/stream.mp3"))
+				w.Header().Set("Content-Type", "audio/mpeg")
+				_, _ = fmt.Fprint(w, "mp3-bytes")
+			}))
+			defer fakeBackend.Close()
+
+			setupPlaybackDB(fakeBackend.URL)
+			router, proxyItemID := streamRouter()
+
+			w := doGet(router, "/audio/"+proxyItemID+"/stream.mp3?api_key="+pbProxyToken)
+			Expect(w.Code).To(Equal(http.StatusOK))
+			Expect(w.Body.String()).To(Equal("mp3-bytes"))
+		})
+
+		It("returns 400 for invalid item ID", func() {
+			setupPlaybackDB("http://unused")
+			router, _ := streamRouter()
+
+			w := doGet(router, "/audio/invalid-id/stream?api_key="+pbProxyToken)
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// UniversalAudio (public)
+	// ═══════════════════════════════════════════════════════════════════════
+
+	Describe("UniversalAudio", func() {
+		It("proxies universal audio endpoint", func() {
+			fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				Expect(r.URL.Path).To(Equal("/audio/" + pbBackendItemID + "/universal"))
+				w.Header().Set("Content-Type", "audio/aac")
+				_, _ = fmt.Fprint(w, "universal-audio-bytes")
+			}))
+			defer fakeBackend.Close()
+
+			setupPlaybackDB(fakeBackend.URL)
+			router, proxyItemID := streamRouter()
+
+			w := doGet(router, "/audio/"+proxyItemID+"/universal?api_key="+pbProxyToken)
+			Expect(w.Code).To(Equal(http.StatusOK))
+			Expect(w.Body.String()).To(Equal("universal-audio-bytes"))
+		})
+
+		It("returns 400 for invalid item ID", func() {
+			setupPlaybackDB("http://unused")
+			router, _ := streamRouter()
+
+			w := doGet(router, "/audio/invalid-id/universal?api_key="+pbProxyToken)
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// GetImage (public)
+	// ═══════════════════════════════════════════════════════════════════════
+
+	Describe("GetImage", func() {
+		It("proxies image bytes from the backend", func() {
+			fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				Expect(r.URL.Path).To(Equal("/items/" + pbBackendItemID + "/images/primary"))
+				w.Header().Set("Content-Type", "image/jpeg")
+				_, _ = fmt.Fprint(w, "image-bytes")
+			}))
+			defer fakeBackend.Close()
+
+			setupPlaybackDB(fakeBackend.URL)
+			router, proxyItemID := streamRouter()
+
+			w := doGet(router, "/items/"+proxyItemID+"/images/primary?api_key="+pbProxyToken)
+			Expect(w.Code).To(Equal(http.StatusOK))
+			Expect(w.Body.String()).To(Equal("image-bytes"))
+		})
+
+		It("includes image index in the path when present", func() {
+			fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				Expect(r.URL.Path).To(Equal("/items/" + pbBackendItemID + "/images/backdrop/0"))
+				w.Header().Set("Content-Type", "image/jpeg")
+				w.WriteHeader(http.StatusOK)
+			}))
+			defer fakeBackend.Close()
+
+			setupPlaybackDB(fakeBackend.URL)
+			router, proxyItemID := streamRouter()
+
+			w := doGet(router, "/items/"+proxyItemID+"/images/backdrop/0?api_key="+pbProxyToken)
+			Expect(w.Code).To(Equal(http.StatusOK))
+		})
+
+		It("returns 400 for invalid item ID", func() {
+			setupPlaybackDB("http://unused")
+			router, _ := streamRouter()
+
+			w := doGet(router, "/items/invalid-id/images/primary?api_key="+pbProxyToken)
+			Expect(w.Code).To(Equal(http.StatusBadRequest))
+		})
+	})
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// VideoSubpath: subtitle handling
+	// ═══════════════════════════════════════════════════════════════════════
+
+	Describe("VideoSubpath subtitle routing", func() {
+		It("routes subtitle paths correctly", func() {
+			msProxyID := idtrans.Encode(pbPrefix, "mediasource123")
+			fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				Expect(r.URL.Path).To(ContainSubstring("/subtitles/"))
+				w.Header().Set("Content-Type", "text/vtt")
+				_, _ = fmt.Fprint(w, "WEBVTT\n\nsubtitle content")
+			}))
+			defer fakeBackend.Close()
+
+			setupPlaybackDB(fakeBackend.URL)
+			router, proxyItemID := playbackRouter()
+
+			w := doGet(router, "/videos/"+proxyItemID+"/"+msProxyID+"/subtitles/0/stream.vtt?api_key="+pbProxyToken)
+			Expect(w.Code).To(Equal(http.StatusOK))
+			Expect(w.Body.String()).To(ContainSubstring("WEBVTT"))
+		})
+	})
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// forwardPlaybackReport
+	// ═══════════════════════════════════════════════════════════════════════
+
+	Describe("forwardPlaybackReport", func() {
+		It("forwards Playing report to the backend", func() {
+			var receivedPath string
+			fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				receivedPath = r.URL.Path
+				w.WriteHeader(http.StatusNoContent)
+			}))
+			defer fakeBackend.Close()
+
+			setupPlaybackDB(fakeBackend.URL)
+			router, proxyItemID := playbackRouter()
+
+			w := doPost(router, "/sessions/playing",
+				map[string]interface{}{"ItemId": proxyItemID},
+				map[string]string{"X-Emby-Token": pbProxyToken})
+			Expect(w.Code).To(Equal(http.StatusNoContent))
+			Expect(receivedPath).To(Equal("/sessions/Playing"))
+		})
+
+		It("returns 204 when body is empty", func() {
+			setupPlaybackDB("http://unused")
+			router, _ := playbackRouter()
+
+			// Send a POST with genuinely empty body
+			req, _ := http.NewRequest(http.MethodPost, "/sessions/playing", http.NoBody)
+			req.Header.Set("X-Emby-Token", pbProxyToken)
+			req.RemoteAddr = "127.0.0.1:12345"
+			w := httptest.NewRecorder()
+			router.ServeHTTP(w, req)
+			Expect(w.Code).To(Equal(http.StatusNoContent))
+		})
+
+		It("returns 204 when ItemId is missing", func() {
+			setupPlaybackDB("http://unused")
+			router, _ := playbackRouter()
+
+			w := doPost(router, "/sessions/playing",
+				map[string]interface{}{"SomeField": "value"},
+				map[string]string{"X-Emby-Token": pbProxyToken})
+			Expect(w.Code).To(Equal(http.StatusNoContent))
+		})
+
+		It("returns 204 when ItemId cannot be decoded", func() {
+			setupPlaybackDB("http://unused")
+			router, _ := playbackRouter()
+
+			w := doPost(router, "/sessions/playing",
+				map[string]interface{}{"ItemId": "unknownid"},
+				map[string]string{"X-Emby-Token": pbProxyToken})
+			Expect(w.Code).To(Equal(http.StatusNoContent))
+		})
+	})
+
+	// ═══════════════════════════════════════════════════════════════════════
+	// HLS playlist token injection: #EXT-X-MAP:URI handling
+	// ═══════════════════════════════════════════════════════════════════════
+
+	Describe("HLS playlist URI tag injection", func() {
+		It("injects token into #EXT-X-MAP:URI tags", func() {
+			fakeBackend := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
+				_, _ = fmt.Fprint(w, strings.Join([]string{
+					"#EXTM3U",
+					`#EXT-X-MAP:URI="init.mp4"`,
+					"#EXTINF:6.0,",
+					"segment0.mp4",
+					"",
+				}, "\n"))
+			}))
+			defer fakeBackend.Close()
+
+			setupPlaybackDB(fakeBackend.URL)
+			router, proxyItemID := playbackRouter()
+
+			w := doGet(router, "/videos/"+proxyItemID+"/main.m3u8?ApiKey="+pbProxyToken)
+			Expect(w.Code).To(Equal(http.StatusOK))
+			body := w.Body.String()
+			// URI in the tag should have ApiKey injected
+			Expect(body).To(ContainSubstring(`URI="init.mp4?ApiKey=` + pbProxyToken + `"`))
+			// Segment URLs should also have the token
+			Expect(body).To(ContainSubstring("segment0.mp4?ApiKey=" + pbProxyToken))
 		})
 	})
 })

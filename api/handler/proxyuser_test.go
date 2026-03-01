@@ -33,7 +33,7 @@ var _ = Describe("ProxyUserHandler", func() {
 		router.DELETE("/proxy/users/:id", h.DeleteUser)
 	})
 
-	// ── CreateUser ────────────────────────────────────────────────────────────
+	// ── CreateUser ───────────────────────────────────────────────────────────────
 
 	Describe("CreateUser", func() {
 		Context("with valid fields", func() {
@@ -109,7 +109,7 @@ var _ = Describe("ProxyUserHandler", func() {
 		})
 	})
 
-	// ── ListUsers ─────────────────────────────────────────────────────────────
+	// ── ListUsers ────────────────────────────────────────────────────────────────
 
 	Describe("ListUsers", func() {
 		Context("with no users in the database", func() {
@@ -140,7 +140,7 @@ var _ = Describe("ProxyUserHandler", func() {
 		})
 	})
 
-	// ── GetProxyUser ──────────────────────────────────────────────────────────
+	// ── GetProxyUser ─────────────────────────────────────────────────────────────
 
 	Describe("GetProxyUser", func() {
 		Context("when the user exists", func() {
@@ -173,7 +173,7 @@ var _ = Describe("ProxyUserHandler", func() {
 		})
 	})
 
-	// ── UpdateUser ────────────────────────────────────────────────────────────
+	// ── UpdateUser ───────────────────────────────────────────────────────────────
 
 	Describe("UpdateUser", func() {
 		var user *ent.User
@@ -256,9 +256,37 @@ var _ = Describe("ProxyUserHandler", func() {
 				Expect(w.Code).To(Equal(http.StatusNotFound))
 			})
 		})
+
+		Context("with a malformed UUID", func() {
+			It("returns 400", func() {
+				w := doPatch(router, "/proxy/users/not-a-uuid",
+					map[string]string{"display_name": "Ghost"},
+				)
+
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
+
+		Context("updating password", func() {
+			It("returns 200 when the new password is valid", func() {
+				w := doPatch(router, "/proxy/users/"+user.ID.String(),
+					map[string]interface{}{"password": "newpassword123"},
+				)
+
+				Expect(w.Code).To(Equal(http.StatusOK))
+			})
+
+			It("returns 400 when the password is too short", func() {
+				w := doPatch(router, "/proxy/users/"+user.ID.String(),
+					map[string]interface{}{"password": "short"},
+				)
+
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
 	})
 
-	// ── GetUserBackends ───────────────────────────────────────────────────────
+	// ── GetUserBackends ──────────────────────────────────────────────────────────
 
 	Describe("GetUserBackends", func() {
 		Context("when the user has no mappings", func() {
@@ -320,7 +348,7 @@ var _ = Describe("ProxyUserHandler", func() {
 		})
 	})
 
-	// ── DeleteUser ────────────────────────────────────────────────────────────
+	// ── DeleteUser ───────────────────────────────────────────────────────────────
 
 	Describe("DeleteUser", func() {
 		Context("when the user exists", func() {
@@ -338,6 +366,14 @@ var _ = Describe("ProxyUserHandler", func() {
 				w := doDelete(router, "/proxy/users/00000000-0000-0000-0000-000000000001")
 
 				Expect(w.Code).To(Equal(http.StatusNotFound))
+			})
+		})
+
+		Context("with a malformed UUID", func() {
+			It("returns 400", func() {
+				w := doDelete(router, "/proxy/users/not-a-uuid")
+
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
 			})
 		})
 

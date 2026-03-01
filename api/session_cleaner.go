@@ -42,7 +42,7 @@ func (sc *SessionCleaner) Start(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				sc.cleanup(ctx)
+				sc.Cleanup(ctx)
 			}
 		}
 	}()
@@ -56,7 +56,9 @@ func (sc *SessionCleaner) Stop() {
 	<-sc.done
 }
 
-func (sc *SessionCleaner) cleanup(ctx context.Context) {
+// Cleanup deletes sessions that have been inactive longer than the configured
+// SessionTTL.
+func (sc *SessionCleaner) Cleanup(ctx context.Context) {
 	if sc.cfg.SessionTTL <= 0 {
 		return // no TTL configured, nothing to clean
 	}

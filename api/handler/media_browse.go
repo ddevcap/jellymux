@@ -21,7 +21,7 @@ func (h *MediaHandler) GetSeasons(c *gin.Context) {
 		return
 	}
 
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET",
 		"/shows/"+backendID+"/seasons", query, nil)
 	if err != nil {
@@ -39,7 +39,7 @@ func (h *MediaHandler) GetEpisodes(c *gin.Context) {
 		return
 	}
 
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET",
 		"/shows/"+backendID+"/episodes", query, nil)
 	if err != nil {
@@ -69,7 +69,7 @@ func (h *MediaHandler) SearchHints(c *gin.Context) {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(c.Request.Context(), fanOutTimeout)
 			defer cancel()
-			q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+			q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 			body, status, err := sc.ProxyJSON(ctx, "GET", "/search/hints", q, nil)
 			if err != nil || status != http.StatusOK {
 				return
@@ -101,70 +101,70 @@ func (h *MediaHandler) SearchHints(c *gin.Context) {
 // GetArtists handles GET /Artists — aggregates across all backends.
 func (h *MediaHandler) GetArtists(c *gin.Context) {
 	h.aggregatePagedItems(c, "/artists", func(sc *backend.ServerClient) url.Values {
-		return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	})
 }
 
 // GetAlbumArtists handles GET /Artists/AlbumArtists — aggregates across all backends.
 func (h *MediaHandler) GetAlbumArtists(c *gin.Context) {
 	h.aggregatePagedItems(c, "/artists/AlbumArtists", func(sc *backend.ServerClient) url.Values {
-		return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	})
 }
 
 // GetGenres handles GET /Genres — aggregates across all backends.
 func (h *MediaHandler) GetGenres(c *gin.Context) {
 	h.aggregatePagedItems(c, "/genres", func(sc *backend.ServerClient) url.Values {
-		return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	})
 }
 
 // GetMusicGenres handles GET /MusicGenres — aggregates across all backends.
 func (h *MediaHandler) GetMusicGenres(c *gin.Context) {
 	h.aggregatePagedItems(c, "/musicgenres", func(sc *backend.ServerClient) url.Values {
-		return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	})
 }
 
 // GetStudios handles GET /Studios — aggregates across all backends.
 func (h *MediaHandler) GetStudios(c *gin.Context) {
 	h.aggregatePagedItems(c, "/studios", func(sc *backend.ServerClient) url.Values {
-		return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	})
 }
 
 // GetPersons handles GET /Persons — aggregates across all backends.
 func (h *MediaHandler) GetPersons(c *gin.Context) {
 	h.aggregatePagedItems(c, "/persons", func(sc *backend.ServerClient) url.Values {
-		return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	})
 }
 
 // GetChannels handles GET /Channels — aggregates across all backends.
 func (h *MediaHandler) GetChannels(c *gin.Context) {
 	h.aggregatePagedItems(c, "/channels", func(sc *backend.ServerClient) url.Values {
-		return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	})
 }
 
 // GetLiveTvChannels handles GET /LiveTv/Channels — aggregates across all backends.
 func (h *MediaHandler) GetLiveTvChannels(c *gin.Context) {
 	h.aggregatePagedItems(c, "/livetv/Channels", func(sc *backend.ServerClient) url.Values {
-		return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	})
 }
 
 // GetLiveTvPrograms handles GET /LiveTv/Programs — aggregates across all backends.
 func (h *MediaHandler) GetLiveTvPrograms(c *gin.Context) {
 	h.aggregatePagedItems(c, "/livetv/Programs", func(sc *backend.ServerClient) url.Values {
-		return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	})
 }
 
 // GetLiveTvRecommendedPrograms handles GET /LiveTv/Programs/Recommended — aggregates across all backends.
 func (h *MediaHandler) GetLiveTvRecommendedPrograms(c *gin.Context) {
 	h.aggregatePagedItems(c, "/livetv/Programs/Recommended", func(sc *backend.ServerClient) url.Values {
-		return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	})
 }
 
@@ -176,14 +176,14 @@ func (h *MediaHandler) GetLiveTvInfo(c *gin.Context) {
 // GetTrailers handles GET /Trailers — aggregates across all backends.
 func (h *MediaHandler) GetTrailers(c *gin.Context) {
 	h.aggregatePagedItems(c, "/trailers", func(sc *backend.ServerClient) url.Values {
-		return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	})
 }
 
 // GetPlaylists handles GET /Playlists — aggregates across all backends.
 func (h *MediaHandler) GetPlaylists(c *gin.Context) {
 	h.aggregatePagedItems(c, "/items", func(sc *backend.ServerClient) url.Values {
-		q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 		q.Set("IncludeItemTypes", "Playlist")
 		return q
 	})
@@ -196,7 +196,7 @@ func (h *MediaHandler) GetPlaylistItems(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET", "/playlists/"+backendID+"/items", q, nil)
 	if err != nil {
 		gatewayError(c, err)
@@ -212,7 +212,7 @@ func (h *MediaHandler) GetCollectionItems(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET",
 		"/collections/"+backendID+"/items", q, nil)
 	if err != nil {
@@ -225,14 +225,14 @@ func (h *MediaHandler) GetCollectionItems(c *gin.Context) {
 // GetNextUp handles GET /Shows/NextUp — aggregates across backends.
 func (h *MediaHandler) GetNextUp(c *gin.Context) {
 	h.aggregatePagedItems(c, "/shows/NextUp", func(sc *backend.ServerClient) url.Values {
-		return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	})
 }
 
 // GetUpcomingEpisodes handles GET /Shows/Upcoming — aggregates across backends.
 func (h *MediaHandler) GetUpcomingEpisodes(c *gin.Context) {
 	h.aggregatePagedItems(c, "/shows/Upcoming", func(sc *backend.ServerClient) url.Values {
-		return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	})
 }
 
@@ -243,7 +243,7 @@ func (h *MediaHandler) GetSimilarItems(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET", "/items/"+backendID+"/similar", q, nil)
 	if err != nil {
 		gatewayError(c, err)
@@ -259,7 +259,7 @@ func (h *MediaHandler) GetSimilarMovies(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET", "/movies/"+backendID+"/similar", q, nil)
 	if err != nil {
 		gatewayError(c, err)
@@ -275,7 +275,7 @@ func (h *MediaHandler) GetSimilarShows(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET", "/shows/"+backendID+"/similar", q, nil)
 	if err != nil {
 		gatewayError(c, err)
@@ -352,7 +352,7 @@ func (h *MediaHandler) userItemAction(c *gin.Context, method, collection string)
 	} else {
 		path = "/users/" + sc.BackendUserID() + "/" + collection + "/" + backendID
 	}
-	q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, _ := io.ReadAll(io.LimitReader(c.Request.Body, maxBodySize))
 	respBody, status, err := sc.ProxyJSON(c.Request.Context(), method, path, q, body)
 	if err != nil {
@@ -398,7 +398,7 @@ func (h *MediaHandler) proxyFirstBackend(c *gin.Context, method, path string, bo
 		c.JSON(http.StatusOK, gin.H{})
 		return
 	}
-	q := forwardQuery(c.Request.URL.Query(), clients[0].BackendUserID())
+	q := ForwardQuery(c.Request.URL.Query(), clients[0].BackendUserID())
 	respBody, status, err := clients[0].ProxyJSON(c.Request.Context(), method, path, q, body)
 	if err != nil {
 		gatewayError(c, err)

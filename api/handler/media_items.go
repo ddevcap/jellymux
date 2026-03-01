@@ -19,7 +19,7 @@ import (
 // SearchTerm is present without a ParentId; returns empty list otherwise.
 // When ParentId is a merged virtual ID, fans out to all backends.
 func (h *MediaHandler) GetItems(c *gin.Context) {
-	serverID := serverIDFromQuery(c)
+	serverID := ServerIDFromQuery(c)
 	if serverID == "" {
 		// No parentId/ids — fan out if this is a search request.
 		if queryParam(c, "searchterm") == "" {
@@ -27,16 +27,16 @@ func (h *MediaHandler) GetItems(c *gin.Context) {
 			return
 		}
 		h.aggregatePagedItems(c, "/items", func(sc *backend.ServerClient) url.Values {
-			return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+			return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 		})
 		return
 	}
 
 	if collectionType, ok := idtrans.DecodeMerged(serverID); ok {
 		h.aggregatePagedItems(c, "/items", func(sc *backend.ServerClient) url.Values {
-			q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+			q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 			q.Del("ParentId")
-			q.Set("IncludeItemTypes", collectionTypeToItemType(collectionType))
+			q.Set("IncludeItemTypes", CollectionTypeToItemType(collectionType))
 			q.Set("Recursive", "true")
 			return q
 		})
@@ -49,7 +49,7 @@ func (h *MediaHandler) GetItems(c *gin.Context) {
 		return
 	}
 
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET", "/items", query, nil)
 	if err != nil {
 		gatewayError(c, err)
@@ -81,7 +81,7 @@ func (h *MediaHandler) GetItem(c *gin.Context) {
 		return
 	}
 
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET", "/items/"+backendID, query, nil)
 	if err != nil {
 		gatewayError(c, err)
@@ -105,7 +105,7 @@ func (h *MediaHandler) GetUserItems(c *gin.Context) {
 		}
 		h.aggregatePagedItems(c, "/items",
 			func(sc *backend.ServerClient) url.Values {
-				return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+				return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 			},
 		)
 		return
@@ -114,9 +114,9 @@ func (h *MediaHandler) GetUserItems(c *gin.Context) {
 	if collectionType, ok := idtrans.DecodeMerged(parentID); ok {
 		h.aggregatePagedItems(c, "/items",
 			func(sc *backend.ServerClient) url.Values {
-				q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+				q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 				q.Del("ParentId")
-				q.Set("IncludeItemTypes", collectionTypeToItemType(collectionType))
+				q.Set("IncludeItemTypes", CollectionTypeToItemType(collectionType))
 				q.Set("Recursive", "true")
 				return q
 			},
@@ -136,7 +136,7 @@ func (h *MediaHandler) GetUserItems(c *gin.Context) {
 		return
 	}
 
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET",
 		"/users/"+sc.BackendUserID()+"/items", query, nil)
 	if err != nil {
@@ -170,9 +170,9 @@ func (h *MediaHandler) GetLatestItems(c *gin.Context) {
 				defer wg.Done()
 				ctx, cancel := context.WithTimeout(c.Request.Context(), fanOutTimeout)
 				defer cancel()
-				q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+				q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 				q.Del("ParentId")
-				q.Set("IncludeItemTypes", collectionTypeToItemType(collectionType))
+				q.Set("IncludeItemTypes", CollectionTypeToItemType(collectionType))
 				body, status, err := sc.ProxyJSON(ctx, "GET",
 					"/users/"+sc.BackendUserID()+"/items/Latest", q, nil)
 				if err != nil || status != http.StatusOK {
@@ -219,7 +219,7 @@ func (h *MediaHandler) GetLatestItems(c *gin.Context) {
 				defer wg.Done()
 				ctx, cancel := context.WithTimeout(c.Request.Context(), fanOutTimeout)
 				defer cancel()
-				q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+				q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 				body, status, err := sc.ProxyJSON(ctx, "GET",
 					"/users/"+sc.BackendUserID()+"/items/Latest", q, nil)
 				if err != nil || status != http.StatusOK {
@@ -258,7 +258,7 @@ func (h *MediaHandler) GetLatestItems(c *gin.Context) {
 		return
 	}
 
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET",
 		"/users/"+sc.BackendUserID()+"/items/Latest", query, nil)
 	if err != nil {
@@ -292,7 +292,7 @@ func (h *MediaHandler) GetUserItem(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	query := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET",
 		"/users/"+sc.BackendUserID()+"/items/"+backendID, query, nil)
 	if err != nil {
@@ -309,7 +309,7 @@ func (h *MediaHandler) GetResumeItems(c *gin.Context) {
 			return "/users/" + sc.BackendUserID() + "/items/Resume"
 		},
 		func(sc *backend.ServerClient) url.Values {
-			return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+			return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 		},
 	)
 }
@@ -317,7 +317,7 @@ func (h *MediaHandler) GetResumeItems(c *gin.Context) {
 // GetSuggestedItems handles GET /Items/Suggestions — aggregates across backends.
 func (h *MediaHandler) GetSuggestedItems(c *gin.Context) {
 	h.aggregatePagedItems(c, "/items/Suggestions", func(sc *backend.ServerClient) url.Values {
-		return forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+		return ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	})
 }
 
@@ -379,7 +379,7 @@ func (h *MediaHandler) GetItemChildren(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET", "/items/"+backendID+"/children", q, nil)
 	if err != nil {
 		gatewayError(c, err)
@@ -430,7 +430,7 @@ func (h *MediaHandler) RefreshItem(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "POST", "/items/"+backendID+"/refresh", q, nil)
 	if err != nil {
 		gatewayError(c, err)
@@ -446,7 +446,7 @@ func (h *MediaHandler) GetSpecialFeatures(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET", "/items/"+backendID+"/specialfeatures", q, nil)
 	if err != nil {
 		gatewayError(c, err)
@@ -462,7 +462,7 @@ func (h *MediaHandler) GetThemeMedia(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET", "/items/"+backendID+"/thememedia", q, nil)
 	if err != nil {
 		gatewayError(c, err)
@@ -478,7 +478,7 @@ func (h *MediaHandler) GetLocalTrailers(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET",
 		"/users/"+sc.BackendUserID()+"/items/"+backendID+"/localtrailers", q, nil)
 	if err != nil {
@@ -507,7 +507,7 @@ func (h *MediaHandler) GetIntros(c *gin.Context) {
 // GetQueryFilters handles GET /Items/Filters2 and GET /Items/Filters.
 // Routes to the backend identified by ParentId; returns empty filters if absent.
 func (h *MediaHandler) GetQueryFilters(c *gin.Context) {
-	serverID := serverIDFromQuery(c)
+	serverID := ServerIDFromQuery(c)
 	if serverID == "" {
 		c.JSON(http.StatusOK, gin.H{
 			"Genres":          []interface{}{},
@@ -529,7 +529,7 @@ func (h *MediaHandler) GetQueryFilters(c *gin.Context) {
 		c.JSON(http.StatusNotFound, gin.H{"error": "server not found"})
 		return
 	}
-	q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+	q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	body, status, err := sc.ProxyJSON(c.Request.Context(), "GET", "/items/Filters2", q, nil)
 	if err != nil {
 		gatewayError(c, err)
@@ -565,9 +565,9 @@ func (h *MediaHandler) aggregateFilters(c *gin.Context, collectionType string) {
 			defer wg.Done()
 			ctx, cancel := context.WithTimeout(c.Request.Context(), fanOutTimeout)
 			defer cancel()
-			q := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
+			q := ForwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 			q.Del("ParentId")
-			if it := collectionTypeToItemType(collectionType); it != "" {
+			if it := CollectionTypeToItemType(collectionType); it != "" {
 				q.Set("IncludeItemTypes", it)
 			}
 			body, status, err := sc.ProxyJSON(ctx, "GET", "/items/Filters2", q, nil)

@@ -207,7 +207,7 @@ var _ = Describe("Route-by-ID browse endpoints", func() {
 		})
 	}
 
-	// ── User-scoped item routes ───────────────────────────────────────────────
+	// ── User-scoped item routes ──────────────────────────────────────────────────
 
 	Describe("GetLocalTrailers", func() {
 		It("proxies to the backend with the correct user path", func() {
@@ -239,7 +239,7 @@ var _ = Describe("Route-by-ID browse endpoints", func() {
 		})
 	})
 
-	// ── Mutating item actions ─────────────────────────────────────────────────
+	// ── Mutating item actions ────────────────────────────────────────────────────
 
 	type userItemCase struct {
 		describe string
@@ -291,7 +291,7 @@ var _ = Describe("Route-by-ID browse endpoints", func() {
 		})
 	}
 
-	// ── UpdateItem (POST /Items/:itemId) ──────────────────────────────────────
+	// ── UpdateItem (POST /Items/:itemId) ─────────────────────────────────────────
 
 	Describe("UpdateItem", func() {
 		It("forwards the body to the backend", func() {
@@ -309,7 +309,7 @@ var _ = Describe("Route-by-ID browse endpoints", func() {
 		})
 	})
 
-	// ── DeleteItem ────────────────────────────────────────────────────────────
+	// ── DeleteItem ───────────────────────────────────────────────────────────────
 
 	Describe("DeleteItem", func() {
 		It("forwards the DELETE to the backend", func() {
@@ -326,7 +326,7 @@ var _ = Describe("Route-by-ID browse endpoints", func() {
 		})
 	})
 
-	// ── RefreshItem ───────────────────────────────────────────────────────────
+	// ── RefreshItem ──────────────────────────────────────────────────────────────
 
 	Describe("RefreshItem", func() {
 		It("forwards the POST to the backend", func() {
@@ -342,7 +342,7 @@ var _ = Describe("Route-by-ID browse endpoints", func() {
 		})
 	})
 
-	// ── UpdateUserConfiguration ───────────────────────────────────────────────
+	// ── UpdateUserConfiguration ──────────────────────────────────────────────────
 
 	Describe("UpdateUserConfiguration", func() {
 		It("returns 204 (no-op stub)", func() {
@@ -353,7 +353,7 @@ var _ = Describe("Route-by-ID browse endpoints", func() {
 		})
 	})
 
-	// ── UpdateUserPolicy ──────────────────────────────────────────────────────
+	// ── UpdateUserPolicy ─────────────────────────────────────────────────────────
 
 	Describe("UpdateUserPolicy", func() {
 		It("returns 204 (no-op stub)", func() {
@@ -365,7 +365,7 @@ var _ = Describe("Route-by-ID browse endpoints", func() {
 	})
 })
 
-// ── Aggregated browse endpoints ───────────────────────────────────────────────
+// ── Aggregated browse endpoints ──────────────────────────────────────────────
 
 var _ = Describe("Aggregated browse endpoints", func() {
 	var router *gin.Engine
@@ -438,7 +438,7 @@ var _ = Describe("Aggregated browse endpoints", func() {
 		})
 	}
 
-	// ── GetPlaylists ──────────────────────────────────────────────────────────
+	// ── GetPlaylists ─────────────────────────────────────────────────────────────
 
 	Describe("GetPlaylists", func() {
 		It("returns playlists from the backend", func() {
@@ -458,7 +458,7 @@ var _ = Describe("Aggregated browse endpoints", func() {
 		})
 	})
 
-	// ── SearchHints ───────────────────────────────────────────────────────────
+	// ── SearchHints ──────────────────────────────────────────────────────────────
 
 	Describe("SearchHints", func() {
 		It("aggregates search results from all backends", func() {
@@ -490,7 +490,7 @@ var _ = Describe("Aggregated browse endpoints", func() {
 	})
 })
 
-// ── Static stub endpoints ─────────────────────────────────────────────────────
+// ── Static stub endpoints ────────────────────────────────────────────────────
 
 var _ = Describe("Static stub endpoints", func() {
 	var router *gin.Engine
@@ -563,7 +563,7 @@ var _ = Describe("Static stub endpoints", func() {
 	})
 })
 
-// ── GetUsers ──────────────────────────────────────────────────────────────────
+// ── GetUsers ─────────────────────────────────────────────────────────────────
 
 var _ = Describe("GetUsers", func() {
 	var router *gin.Engine
@@ -585,7 +585,7 @@ var _ = Describe("GetUsers", func() {
 	})
 })
 
-// ── Playback reports ──────────────────────────────────────────────────────────
+// ── Playback reports ─────────────────────────────────────────────────────────
 
 var _ = Describe("Playback report endpoints", func() {
 	var router *gin.Engine
@@ -631,7 +631,7 @@ var _ = Describe("Playback report endpoints", func() {
 	}
 })
 
-// ── Image proxy ───────────────────────────────────────────────────────────────
+// ── Image proxy ──────────────────────────────────────────────────────────────
 
 var _ = Describe("GetImage", func() {
 	var router *gin.Engine
@@ -676,7 +676,7 @@ var _ = Describe("GetImage", func() {
 	})
 })
 
-// ── Audio streams ─────────────────────────────────────────────────────────────
+// ── Audio streams ────────────────────────────────────────────────────────────
 
 var _ = Describe("Audio stream endpoints", func() {
 	var router *gin.Engine

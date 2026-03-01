@@ -12,7 +12,7 @@ import (
 	"time"
 )
 
-// ── HTTP helpers ──────────────────────────────────────────────────────────────
+// ── HTTP helpers ─────────────────────────────────────────────────────────────
 
 var httpClient = &http.Client{
 	Timeout: 30 * time.Second,
@@ -79,7 +79,7 @@ func del(url, token string) *http.Response {
 	return resp
 }
 
-// ── JSON helpers ──────────────────────────────────────────────────────────────
+// ── JSON helpers ─────────────────────────────────────────────────────────────
 
 // parseJSONObject reads and parses a JSON response body into a map.
 func parseJSONObject(resp *http.Response) map[string]interface{} {
@@ -117,7 +117,7 @@ func pagedItems(resp *http.Response) ([]interface{}, int) {
 	return items, total
 }
 
-// ── URL helpers ───────────────────────────────────────────────────────────────
+// ── URL helpers ──────────────────────────────────────────────────────────────
 
 // proxyURL builds a full URL to the proxy.
 func proxyURL(pathAndQuery string) string {

@@ -4,6 +4,10 @@
 # Build output
 jellyfin-proxy
 
+# Test coverage
+coverage.out
+coverage.html
+
 # IDE
 .idea/
 .vscode/

@@ -43,6 +43,7 @@ func avatarRouter() *gin.Engine {
 	r := gin.New()
 	// Public
 	r.GET("/users/:userId/images/primary", avatarH.GetAvatar)
+	r.GET("/userimage", avatarH.GetAvatarByQuery)
 
 	// Authenticated
 	priv := r.Group("/")
@@ -73,7 +74,7 @@ var _ = Describe("AvatarHandler", func() {
 		return map[string]string{"X-Emby-Token": token}
 	}
 
-	// ── GetAvatar ─────────────────────────────────────────────────────────────
+	// ── GetAvatar ────────────────────────────────────────────────────────────────
 
 	Describe("GetAvatar", func() {
 		Context("when the user has no avatar", func() {
@@ -122,7 +123,7 @@ var _ = Describe("AvatarHandler", func() {
 		})
 	})
 
-	// ── UploadAvatar ──────────────────────────────────────────────────────────
+	// ── UploadAvatar ─────────────────────────────────────────────────────────────
 
 	Describe("UploadAvatar", func() {
 		Context("with a raw binary PNG body", func() {
@@ -233,7 +234,7 @@ var _ = Describe("AvatarHandler", func() {
 		})
 	})
 
-	// ── DeleteAvatar ──────────────────────────────────────────────────────────
+	// ── DeleteAvatar ─────────────────────────────────────────────────────────────
 
 	Describe("DeleteAvatar", func() {
 		BeforeEach(func() {
@@ -287,7 +288,7 @@ var _ = Describe("AvatarHandler", func() {
 		})
 	})
 
-	// ── PrimaryImageTag in user object ────────────────────────────────────────
+	// ── PrimaryImageTag in user object ───────────────────────────────────────────
 
 	Describe("PrimaryImageTag in GET /users/:userId response", func() {
 		Context("when the user has no avatar", func() {
@@ -328,6 +329,43 @@ var _ = Describe("AvatarHandler", func() {
 				var resp map[string]interface{}
 				Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
 				Expect(resp).NotTo(HaveKey("PrimaryImageTag"))
+			})
+		})
+	})
+
+	// ── GetAvatarByQuery ─────────────────────────────────────────────────────────
+
+	Describe("GetAvatarByQuery", func() {
+		Context("when userId query param is provided", func() {
+			It("returns the user's avatar", func() {
+				// Upload avatar first
+				doRawPost(router, "/users/"+user.ID.String()+"/images/primary",
+					minimalPNG(), "image/png", authHeader())
+
+				w := doGet(router, "/userimage?userId="+user.ID.String())
+				Expect(w.Code).To(Equal(http.StatusOK))
+				Expect(w.Header().Get("Content-Type")).To(ContainSubstring("image/"))
+			})
+		})
+
+		Context("when userId is invalid", func() {
+			It("returns 400", func() {
+				w := doGet(router, "/userimage?userId=not-a-uuid")
+				Expect(w.Code).To(Equal(http.StatusBadRequest))
+			})
+		})
+
+		Context("when userId refers to a non-existent user", func() {
+			It("returns 404", func() {
+				w := doGet(router, "/userimage?userId=00000000-0000-0000-0000-000000000001")
+				Expect(w.Code).To(Equal(http.StatusNotFound))
+			})
+		})
+
+		Context("when no userId and no authenticated user", func() {
+			It("returns 404", func() {
+				w := doGet(router, "/userimage")
+				Expect(w.Code).To(Equal(http.StatusNotFound))
 			})
 		})
 	})

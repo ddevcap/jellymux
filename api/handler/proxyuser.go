@@ -45,7 +45,7 @@ func toUserResponse(u *ent.User) userResponse {
 	}
 }
 
-// ── Create ────────────────────────────────────────────────────────────────────
+// ── Create ───────────────────────────────────────────────────────────────────
 
 type createUserRequest struct {
 	Username     string `json:"username"      binding:"required,min=1"`
@@ -88,7 +88,7 @@ func (h *ProxyUserHandler) CreateUser(c *gin.Context) {
 	c.JSON(http.StatusCreated, toUserResponse(user))
 }
 
-// ── List ──────────────────────────────────────────────────────────────────────
+// ── List ─────────────────────────────────────────────────────────────────────
 
 // ListUsers handles GET /proxy/users.
 func (h *ProxyUserHandler) ListUsers(c *gin.Context) {
@@ -107,7 +107,7 @@ func (h *ProxyUserHandler) ListUsers(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// ── Get ───────────────────────────────────────────────────────────────────────
+// ── Get ──────────────────────────────────────────────────────────────────────
 
 // GetProxyUser handles GET /proxy/users/:id.
 func (h *ProxyUserHandler) GetProxyUser(c *gin.Context) {
@@ -130,7 +130,7 @@ func (h *ProxyUserHandler) GetProxyUser(c *gin.Context) {
 	c.JSON(http.StatusOK, toUserResponse(user))
 }
 
-// ── Update ────────────────────────────────────────────────────────────────────
+// ── Update ───────────────────────────────────────────────────────────────────
 
 // updateUserRequest uses pointer fields so that absent fields are distinguished
 // from zero-values, enabling true partial updates.
@@ -189,7 +189,7 @@ func (h *ProxyUserHandler) UpdateUser(c *gin.Context) {
 	c.JSON(http.StatusOK, toUserResponse(user))
 }
 
-// ── User backends ─────────────────────────────────────────────────────────────
+// ── User backends ────────────────────────────────────────────────────────────
 
 // userBackendResponse is the user-centric view of a single BackendUser mapping.
 type userBackendResponse struct {
@@ -248,7 +248,7 @@ func (h *ProxyUserHandler) GetUserBackends(c *gin.Context) {
 	c.JSON(http.StatusOK, resp)
 }
 
-// ── Delete ────────────────────────────────────────────────────────────────────
+// ── Delete ───────────────────────────────────────────────────────────────────
 
 // DeleteUser handles DELETE /proxy/users/:id.
 func (h *ProxyUserHandler) DeleteUser(c *gin.Context) {

@@ -18,14 +18,16 @@ func userFromCtx(c *gin.Context) *ent.User {
 	return user
 }
 
-func fallback(s, def string) string {
+// Fallback returns s if non-empty, otherwise def.
+func Fallback(s, def string) string {
 	if s != "" {
 		return s
 	}
 	return def
 }
 
-func nilIfEmpty(s string) *string {
+// NilIfEmpty returns nil for the empty string, otherwise a pointer to s.
+func NilIfEmpty(s string) *string {
 	if s == "" {
 		return nil
 	}
@@ -67,11 +69,11 @@ func directStreamNets(cfg config.Config) []*net.IPNet {
 	return parsedNetworks
 }
 
-// shouldDirectStream returns true when streaming requests should be redirected
+// ShouldDirectStream returns true when streaming requests should be redirected
 // directly to the backend (302) instead of being piped through the proxy.
 // The decision is based on the user's direct_stream flag AND whether the client
 // IP is on a local/allowed network. Remote clients always get proxied streams.
-func shouldDirectStream(user *ent.User, clientIP string, cfg config.Config) bool {
+func ShouldDirectStream(user *ent.User, clientIP string, cfg config.Config) bool {
 	if user == nil || !user.DirectStream {
 		return false
 	}

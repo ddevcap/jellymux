@@ -20,7 +20,7 @@ import (
 // are accepted with credentials. Unknown origins receive a wildcard
 // Allow-Origin without credentials so public resources still work.
 func corsMiddleware(cfg config.Config) gin.HandlerFunc {
-	allowed := buildAllowedOrigins(cfg.ExternalURL)
+	allowed := BuildAllowedOrigins(cfg.ExternalURL)
 	for _, o := range cfg.CORSOrigins {
 		allowed[strings.ToLower(o)] = true
 	}
@@ -296,11 +296,11 @@ func registerRoutes(
 	}
 }
 
-// buildAllowedOrigins returns a set of lower-cased origin strings that are
+// BuildAllowedOrigins returns a set of lower-cased origin strings that are
 // allowed to make credentialed cross-origin requests. It derives the origins
 // from the configured ExternalURL and also includes its http/https counterpart
 // so that both schemes work during development.
-func buildAllowedOrigins(externalURL string) map[string]bool {
+func BuildAllowedOrigins(externalURL string) map[string]bool {
 	origins := make(map[string]bool)
 	if externalURL == "" {
 		return origins

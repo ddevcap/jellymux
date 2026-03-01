@@ -24,7 +24,7 @@ import (
 	"github.com/ddevcap/jellyfin-proxy/idtrans"
 )
 
-// ── Configurable addresses ────────────────────────────────────────────────────
+// ── Configurable addresses ───────────────────────────────────────────────────
 
 var (
 	// proxyBase is the base URL of the running proxy.
@@ -43,7 +43,7 @@ var (
 	jellyfinServer2Direct = envOr("E2E_JELLYFIN2_DIRECT_URL", "http://localhost:18296")
 )
 
-// ── Shared state populated by BeforeSuite ─────────────────────────────────────
+// ── Shared state populated by BeforeSuite ────────────────────────────────────
 
 var (
 	adminToken string
@@ -105,7 +105,7 @@ var _ = BeforeSuite(func() {
 	By("Setup complete")
 })
 
-// ── Bootstrap helpers ─────────────────────────────────────────────────────────
+// ── Bootstrap helpers ────────────────────────────────────────────────────────
 
 func waitForHealth(url string, timeout time.Duration) {
 	deadline := time.Now().Add(timeout)
@@ -232,7 +232,7 @@ func envOr(key, fallback string) string {
 	return fallback
 }
 
-// ── Jellyfin initial setup ──────────────────────────────────────────────────
+// ── Jellyfin initial setup ───────────────────────────────────────────────────
 
 // setupJellyfin completes the Jellyfin startup wizard, creates an admin
 // account (root / password), adds a Movies library, and waits for the
