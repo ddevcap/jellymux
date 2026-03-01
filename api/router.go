@@ -237,6 +237,7 @@ func registerRoutes(
 		priv.GET("/items/:itemId/similar", mediaH.GetSimilarItems)
 		priv.GET("/items/:itemId/specialfeatures", mediaH.GetSpecialFeatures)
 		priv.GET("/items/:itemId/thememedia", mediaH.GetThemeMedia)
+		priv.GET("/items/:itemId/intros", mediaH.GetIntros)
 
 		// TV Shows
 		priv.GET("/shows/nextup", mediaH.GetNextUp)

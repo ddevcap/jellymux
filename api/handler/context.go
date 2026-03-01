@@ -1,9 +1,12 @@
 package handler
 
 import (
+	"net"
 	"strings"
+	"sync"
 
 	"github.com/ddevcap/jellyfin-proxy/api/middleware"
+	"github.com/ddevcap/jellyfin-proxy/config"
 	"github.com/ddevcap/jellyfin-proxy/ent"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -39,10 +42,56 @@ func dashlessID(s string) string {
 	return strings.ReplaceAll(s, "-", "")
 }
 
+// parsedNetworks lazily parses DirectStreamNetworks CIDRs once.
+var (
+	parsedNetworks   []*net.IPNet
+	parsedNetworksOK bool
+	parseOnce        sync.Once
+)
+
+func directStreamNets(cfg config.Config) []*net.IPNet {
+	parseOnce.Do(func() {
+		for _, cidr := range cfg.DirectStreamNetworks {
+			cidr = strings.TrimSpace(cidr)
+			if cidr == "" {
+				continue
+			}
+			_, ipNet, err := net.ParseCIDR(cidr)
+			if err != nil {
+				continue
+			}
+			parsedNetworks = append(parsedNetworks, ipNet)
+		}
+		parsedNetworksOK = true
+	})
+	return parsedNetworks
+}
+
 // shouldDirectStream returns true when streaming requests should be redirected
 // directly to the backend (302) instead of being piped through the proxy.
-// The decision is based solely on the user's direct_stream field.
-// When user is nil (unauthenticated request), defaults to false (proxy mode).
-func shouldDirectStream(user *ent.User) bool {
-	return user != nil && user.DirectStream
+// The decision is based on the user's direct_stream flag AND whether the client
+// IP is on a local/allowed network. Remote clients always get proxied streams.
+func shouldDirectStream(user *ent.User, clientIP string, cfg config.Config) bool {
+	if user == nil || !user.DirectStream {
+		return false
+	}
+
+	ip := net.ParseIP(clientIP)
+	if ip == nil {
+		return false
+	}
+
+	// If custom networks are configured, check those.
+	nets := directStreamNets(cfg)
+	if parsedNetworksOK && len(nets) > 0 {
+		for _, n := range nets {
+			if n.Contains(ip) {
+				return true
+			}
+		}
+		return false
+	}
+
+	// Fall back to RFC 1918 / loopback / link-local.
+	return ip.IsPrivate() || ip.IsLoopback()
 }

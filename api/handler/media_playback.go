@@ -90,7 +90,7 @@ func (h *MediaHandler) GetImage(c *gin.Context) {
 	}
 
 	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
-	if shouldDirectStream(user) {
+	if shouldDirectStream(user, c.ClientIP(), h.cfg) {
 		redirectStream(c, sc, path, query)
 		return
 	}
@@ -114,7 +114,7 @@ func (h *MediaHandler) StreamVideo(c *gin.Context) {
 	}
 	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 
-	if shouldDirectStream(userFromCtx(c)) {
+	if shouldDirectStream(userFromCtx(c), c.ClientIP(), h.cfg) {
 		redirectStream(c, sc, path, query)
 		return
 	}
@@ -140,7 +140,7 @@ func (h *MediaHandler) HLSMasterPlaylist(c *gin.Context) {
 	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	setApiKey(query, sc)
 
-	if shouldDirectStream(userFromCtx(c)) {
+	if shouldDirectStream(userFromCtx(c), c.ClientIP(), h.cfg) {
 		redirectStream(c, sc, path, query)
 		return
 	}
@@ -163,7 +163,7 @@ func (h *MediaHandler) HLSSegment(c *gin.Context) {
 	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 	setApiKey(query, sc)
 
-	if shouldDirectStream(userFromCtx(c)) {
+	if shouldDirectStream(userFromCtx(c), c.ClientIP(), h.cfg) {
 		redirectStream(c, sc, path, query)
 		return
 	}
@@ -187,7 +187,7 @@ func (h *MediaHandler) StreamAudio(c *gin.Context) {
 	}
 	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 
-	if shouldDirectStream(h.tryResolveUser(c)) {
+	if shouldDirectStream(h.tryResolveUser(c), c.ClientIP(), h.cfg) {
 		redirectStream(c, sc, path, query)
 		return
 	}
@@ -206,7 +206,7 @@ func (h *MediaHandler) UniversalAudio(c *gin.Context) {
 	}
 	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
 
-	if shouldDirectStream(h.tryResolveUser(c)) {
+	if shouldDirectStream(h.tryResolveUser(c), c.ClientIP(), h.cfg) {
 		redirectStream(c, sc, "/audio/"+backendID+"/universal", query)
 		return
 	}
@@ -252,7 +252,7 @@ func (h *MediaHandler) VideoSubpath(c *gin.Context) {
 	// In direct-stream mode, redirect all video sub-requests straight to the
 	// backend. The client (on the same network, e.g. Tailscale) fetches bytes
 	// directly without the proxy acting as a middleman.
-	if shouldDirectStream(h.tryResolveUser(c)) {
+	if shouldDirectStream(h.tryResolveUser(c), c.ClientIP(), h.cfg) {
 		// HLS and segments need the ApiKey in the redirect URL.
 		if strings.HasSuffix(parts[0], ".m3u8") || isHLSSegment() {
 			setApiKey(query, sc)
@@ -403,7 +403,7 @@ func (h *MediaHandler) Download(c *gin.Context) {
 	}
 	path := "/items/" + backendID + "/download"
 	query := forwardQuery(c.Request.URL.Query(), sc.BackendUserID())
-	if shouldDirectStream(h.tryResolveUser(c)) {
+	if shouldDirectStream(h.tryResolveUser(c), c.ClientIP(), h.cfg) {
 		redirectStream(c, sc, path, query)
 		return
 	}

@@ -52,6 +52,10 @@ type Config struct {
 	// LogLevel controls the minimum log level. Accepted values: debug, info,
 	// warn, error. Default: info.
 	LogLevel string `env:"LOG_LEVEL" envDefault:"info"`
+	// DirectStreamNetworks is a list of CIDRs from which direct stream
+	// redirects are allowed (e.g. "100.64.0.0/10" for Tailscale). When empty,
+	// the standard RFC 1918 private ranges are used (net.IP.IsPrivate).
+	DirectStreamNetworks []string `env:"DIRECT_STREAM_NETWORKS" envSeparator:","`
 }
 
 // Load parses configuration from environment variables.

@@ -135,6 +135,7 @@ func doRequest(r http.Handler, method, path string, body interface{}, headers ..
 		reqBody = bytes.NewReader(b)
 	}
 	req, _ := http.NewRequest(method, path, reqBody)
+	req.RemoteAddr = "127.0.0.1:12345" // loopback IP for shouldDirectStream tests
 	if body != nil {
 		req.Header.Set("Content-Type", "application/json")
 	}
