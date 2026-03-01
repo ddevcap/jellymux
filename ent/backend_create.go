@@ -34,9 +34,9 @@ func (_c *BackendCreate) SetURL(v string) *BackendCreate {
 	return _c
 }
 
-// SetJellyfinServerID sets the "jellyfin_server_id" field.
-func (_c *BackendCreate) SetJellyfinServerID(v string) *BackendCreate {
-	_c.mutation.SetJellyfinServerID(v)
+// SetExternalID sets the "external_id" field.
+func (_c *BackendCreate) SetExternalID(v string) *BackendCreate {
+	_c.mutation.SetExternalID(v)
 	return _c
 }
 
@@ -164,12 +164,12 @@ func (_c *BackendCreate) check() error {
 			return &ValidationError{Name: "url", err: fmt.Errorf(`ent: validator failed for field "Backend.url": %w`, err)}
 		}
 	}
-	if _, ok := _c.mutation.JellyfinServerID(); !ok {
-		return &ValidationError{Name: "jellyfin_server_id", err: errors.New(`ent: missing required field "Backend.jellyfin_server_id"`)}
+	if _, ok := _c.mutation.ExternalID(); !ok {
+		return &ValidationError{Name: "external_id", err: errors.New(`ent: missing required field "Backend.external_id"`)}
 	}
-	if v, ok := _c.mutation.JellyfinServerID(); ok {
-		if err := backend.JellyfinServerIDValidator(v); err != nil {
-			return &ValidationError{Name: "jellyfin_server_id", err: fmt.Errorf(`ent: validator failed for field "Backend.jellyfin_server_id": %w`, err)}
+	if v, ok := _c.mutation.ExternalID(); ok {
+		if err := backend.ExternalIDValidator(v); err != nil {
+			return &ValidationError{Name: "external_id", err: fmt.Errorf(`ent: validator failed for field "Backend.external_id": %w`, err)}
 		}
 	}
 	if _, ok := _c.mutation.Enabled(); !ok {
@@ -221,9 +221,9 @@ func (_c *BackendCreate) createSpec() (*Backend, *sqlgraph.CreateSpec) {
 		_spec.SetField(backend.FieldURL, field.TypeString, value)
 		_node.URL = value
 	}
-	if value, ok := _c.mutation.JellyfinServerID(); ok {
-		_spec.SetField(backend.FieldJellyfinServerID, field.TypeString, value)
-		_node.JellyfinServerID = value
+	if value, ok := _c.mutation.ExternalID(); ok {
+		_spec.SetField(backend.FieldExternalID, field.TypeString, value)
+		_node.ExternalID = value
 	}
 	if value, ok := _c.mutation.Enabled(); ok {
 		_spec.SetField(backend.FieldEnabled, field.TypeBool, value)

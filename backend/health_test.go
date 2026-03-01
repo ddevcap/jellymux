@@ -32,7 +32,7 @@ var _ = Describe("HealthChecker", func() {
 		b, err := db.Backend.Create().
 			SetName("healthy").
 			SetURL(srv.URL).
-			SetJellyfinServerID("jf-healthy").
+			SetExternalID("jf-healthy").
 			SetEnabled(true).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -53,7 +53,7 @@ var _ = Describe("HealthChecker", func() {
 		b, err := db.Backend.Create().
 			SetName("dead").
 			SetURL("http://127.0.0.1:1"). // nothing listening
-			SetJellyfinServerID("jf-dead").
+			SetExternalID("jf-dead").
 			SetEnabled(true).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -86,7 +86,7 @@ var _ = Describe("HealthChecker", func() {
 		b, err := db.Backend.Create().
 			SetName("flaky").
 			SetURL(srv.URL).
-			SetJellyfinServerID("jf-flaky").
+			SetExternalID("jf-flaky").
 			SetEnabled(true).
 			Save(ctx)
 		Expect(err).NotTo(HaveOccurred())
@@ -127,7 +127,7 @@ var _ = Describe("HealthChecker", func() {
 			b, err := db.Backend.Create().
 				SetName("circuit-test").
 				SetURL(srv.URL).
-				SetJellyfinServerID("jf-circuit").
+				SetExternalID("jf-circuit").
 				SetEnabled(true).
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -164,7 +164,7 @@ var _ = Describe("HealthChecker", func() {
 			b, err := db.Backend.Create().
 				SetName("reset-test").
 				SetURL(srv.URL).
-				SetJellyfinServerID("jf-reset").
+				SetExternalID("jf-reset").
 				SetEnabled(true).
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())
@@ -204,7 +204,7 @@ var _ = Describe("HealthChecker", func() {
 			b, err := db.Backend.Create().
 				SetName("status-test").
 				SetURL(srv.URL).
-				SetJellyfinServerID("jf-status").
+				SetExternalID("jf-status").
 				SetEnabled(true).
 				Save(ctx)
 			Expect(err).NotTo(HaveOccurred())

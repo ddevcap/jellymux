@@ -71,7 +71,7 @@ var _ = Describe("BackendHandler", func() {
 				var resp map[string]interface{}
 				Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
 				Expect(resp["name"]).To(Equal("Primary"))
-				Expect(resp["jellyfin_server_id"]).To(Equal("server-uuid-1"))
+				Expect(resp["external_id"]).To(Equal("server-uuid-1"))
 				Expect(resp).NotTo(HaveKey("token"))
 			})
 		})
@@ -87,7 +87,7 @@ var _ = Describe("BackendHandler", func() {
 			})
 		})
 
-		Context("with a duplicate jellyfin_server_id", func() {
+		Context("with a duplicate external_id", func() {
 			It("returns 409", func() {
 				// First backend is created with server ID "s1" via createBackend.
 				createBackend("Primary", "http://a.example.com", "server-uuid-dup")
@@ -159,7 +159,7 @@ var _ = Describe("BackendHandler", func() {
 				Expect(w.Code).To(Equal(http.StatusOK))
 				var resp map[string]interface{}
 				Expect(json.Unmarshal(w.Body.Bytes(), &resp)).To(Succeed())
-				Expect(resp["jellyfin_server_id"]).To(Equal("s1"))
+				Expect(resp["external_id"]).To(Equal("s1"))
 			})
 		})
 

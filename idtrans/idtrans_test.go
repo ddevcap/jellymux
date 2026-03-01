@@ -14,14 +14,14 @@ type obj = map[string]interface{}
 // rewriteResponse is a test helper that marshals input, runs RewriteResponse,
 // and returns the unmarshalled result. Expectations are inline so Ginkgo
 // reports the correct spec location on failure.
-func rewriteResponse(input obj, prefix, proxyServerID string) obj { //nolint:unparam
-	return rewriteResponseWithBackend(input, prefix, proxyServerID, nil)
+func rewriteResponse(input obj, externalID, proxyServerID string) obj { //nolint:unparam
+	return rewriteResponseWithBackend(input, externalID, proxyServerID, nil)
 }
 
-func rewriteResponseWithBackend(input obj, prefix, proxyServerID string, backend *idtrans.BackendInfo) obj {
+func rewriteResponseWithBackend(input obj, externalID, proxyServerID string, backend *idtrans.BackendInfo) obj {
 	b, err := json.Marshal(input)
 	Expect(err).NotTo(HaveOccurred())
-	result, err := idtrans.RewriteResponse(b, prefix, proxyServerID, backend)
+	result, err := idtrans.RewriteResponse(b, externalID, proxyServerID, backend)
 	Expect(err).NotTo(HaveOccurred())
 	var out obj
 	Expect(json.Unmarshal(result, &out)).To(Succeed())
@@ -49,11 +49,11 @@ var _ = Describe("Encode", func() {
 		Expect(result).To(MatchRegexp(`^[0-9a-f]{32}$`))
 	})
 
-	It("returns an empty string when backendID is empty", func() {
+	It("returns an empty string when itemID is empty", func() {
 		Expect(idtrans.Encode("s1", "")).To(BeEmpty())
 	})
 
-	It("produces different IDs for different servers with the same backendID", func() {
+	It("produces different IDs for different servers with the same itemID", func() {
 		a := idtrans.Encode("server1", "abc123")
 		b := idtrans.Encode("server2", "abc123")
 		Expect(a).NotTo(Equal(b))
@@ -69,17 +69,17 @@ var _ = Describe("Encode", func() {
 // ── Decode ────────────────────────────────────────────────────────────────────
 
 var _ = Describe("Decode", func() {
-	Context("legacy prefix_backendID format", func() {
-		DescribeTable("correctly splits prefix and backendID",
-			func(proxyID, wantPrefix, wantBackendID string) {
-				prefix, backendID, err := idtrans.Decode(proxyID)
+	Context("legacy prefix_itemID format", func() {
+		DescribeTable("correctly splits serverID and itemID",
+			func(proxyID, wantServerID, wantItemID string) {
+				serverID, itemID, err := idtrans.Decode(proxyID)
 				Expect(err).NotTo(HaveOccurred())
-				Expect(prefix).To(Equal(wantPrefix))
-				Expect(backendID).To(Equal(wantBackendID))
+				Expect(serverID).To(Equal(wantServerID))
+				Expect(itemID).To(Equal(wantItemID))
 			},
 			Entry("simple alphanumeric ID", "s1_abc123", "s1", "abc123"),
-			Entry("UUID with hyphens as backendID", "s2_a1b2c3d4-e5f6-7890-abcd-ef1234567890", "s2", "a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
-			Entry("backendID that itself contains underscores", "s1_has_underscore", "s1", "has_underscore"),
+			Entry("UUID with hyphens as itemID", "s2_a1b2c3d4-e5f6-7890-abcd-ef1234567890", "s2", "a1b2c3d4-e5f6-7890-abcd-ef1234567890"),
+			Entry("itemID that itself contains underscores", "s1_has_underscore", "s1", "has_underscore"),
 		)
 	})
 
@@ -89,9 +89,9 @@ var _ = Describe("Decode", func() {
 			Expect(err).To(HaveOccurred())
 		})
 
-		It("returns the original value as backendID so callers can pass it through", func() {
-			_, backendID, _ := idtrans.Decode("noprefixhere")
-			Expect(backendID).To(Equal("noprefixhere"))
+		It("returns the original value as itemID so callers can pass it through", func() {
+			_, itemID, _ := idtrans.Decode("noprefixhere")
+			Expect(itemID).To(Equal("noprefixhere"))
 		})
 	})
 

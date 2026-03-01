@@ -5,7 +5,6 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"github.com/ddevcap/jellyfin-proxy/backend"
 	"github.com/ddevcap/jellyfin-proxy/config"
@@ -21,16 +20,13 @@ type SystemHandler struct {
 	displayPrefs *displayPrefsStore
 }
 
-// jellyfinVersion is the Jellyfin server version the proxy presents to clients.
 const jellyfinVersion = "10.11.6"
 
 func NewSystemHandler(cfg config.Config, db *ent.Client, pool *backend.Pool) *SystemHandler {
 	return &SystemHandler{cfg: cfg, db: db, pool: pool, displayPrefs: newDisplayPrefsStore()}
 }
 
-// InfoPublic handles GET /System/Info/Public.
-// Returns the minimal server info that unauthenticated clients need
-// (e.g. to display the login screen).
+// InfoPublic handles GET /System/Info/Public (unauthenticated).
 func (h *SystemHandler) InfoPublic(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"LocalAddress":           h.cfg.ExternalURL,
@@ -38,14 +34,13 @@ func (h *SystemHandler) InfoPublic(c *gin.Context) {
 		"Version":                jellyfinVersion,
 		"ProductName":            "Jellyfin Server",
 		"OperatingSystem":        "Linux",
-		"Id":                     strings.ReplaceAll(h.cfg.ServerID, "-", ""),
+		"Id":                     dashlessID(h.cfg.ServerID),
 		"StartupWizardCompleted": true,
 	})
 }
 
 // Info handles GET /System/Info (authenticated).
-// Returns the full server info object. Capabilities that don't apply to a
-// multi-backend proxy (restart, update, browser launch) are explicitly false
+// Capabilities that don't apply to a multi-backend proxy are explicitly false
 // so the web UI does not render the corresponding admin buttons.
 func (h *SystemHandler) Info(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
@@ -54,7 +49,7 @@ func (h *SystemHandler) Info(c *gin.Context) {
 		"Version":                jellyfinVersion,
 		"ProductName":            "Jellyfin Server",
 		"OperatingSystem":        "Linux",
-		"Id":                     strings.ReplaceAll(h.cfg.ServerID, "-", ""),
+		"Id":                     dashlessID(h.cfg.ServerID),
 		"StartupWizardCompleted": true,
 		"SupportsLibraryMonitor": false,
 		"CanSelfRestart":         false,
@@ -66,27 +61,22 @@ func (h *SystemHandler) Info(c *gin.Context) {
 	})
 }
 
-// GetSystemLogs handles GET /System/Logs — returns an empty log file list.
 func (h *SystemHandler) GetSystemLogs(c *gin.Context) {
 	c.JSON(http.StatusOK, []interface{}{})
 }
 
-// GetSystemLogFile handles GET /System/Logs/Log — returns empty log content.
 func (h *SystemHandler) GetSystemLogFile(c *gin.Context) {
 	c.Data(http.StatusOK, "text/plain; charset=utf-8", []byte{})
 }
 
-// GetPackages handles GET /Packages — returns empty list (no plugin updates on proxy).
 func (h *SystemHandler) GetPackages(c *gin.Context) {
 	c.JSON(http.StatusOK, []interface{}{})
 }
 
-// GetRepositories handles GET /Repositories — returns empty list.
 func (h *SystemHandler) GetRepositories(c *gin.Context) {
 	c.JSON(http.StatusOK, []interface{}{})
 }
 
-// BrandingConfiguration handles GET /Branding/Configuration.
 func (h *SystemHandler) BrandingConfiguration(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"LoginDisclaimer":     "",
@@ -95,43 +85,36 @@ func (h *SystemHandler) BrandingConfiguration(c *gin.Context) {
 	})
 }
 
-// BrandingCss handles GET /Branding/Css.
-// The web UI fetches custom CSS from this dedicated endpoint and injects it
-// into every page, making it the most reliable way to hide unsupported sections.
+// BrandingCss serves custom CSS that hides unsupported UI sections.
 func (h *SystemHandler) BrandingCss(c *gin.Context) {
 	c.Data(http.StatusOK, "text/css; charset=utf-8", []byte(static.BrandingCSS))
 }
 
 // UsersPublic handles GET /Users/Public.
-// Returns the list of users visible on the login screen.
-// An empty array means manual username entry is required.
+// Empty array = manual username entry required.
 func (h *SystemHandler) UsersPublic(c *gin.Context) {
 	c.JSON(http.StatusOK, []interface{}{})
 }
 
 // QuickConnectEnabled handles GET /QuickConnect/Enabled.
-// Returns whether QuickConnect is enabled on this server.
 func (h *SystemHandler) QuickConnectEnabled(c *gin.Context) {
 	c.JSON(http.StatusOK, false)
 }
 
 // QuickConnectInitiate handles POST /QuickConnect/Initiate.
-// QuickConnect is not supported by the proxy — return 401 as a real
-// Jellyfin server does when QC is disabled.
+// Not supported — returns 401 as a real Jellyfin server does when QC is disabled.
 func (h *SystemHandler) QuickConnectInitiate(c *gin.Context) {
 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Quick connect is not enabled on this server"})
 }
 
 // SessionCapabilitiesFull handles POST /Sessions/Capabilities/Full.
-// Clients call this after login to advertise what they can play/support.
-// We acknowledge the request and discard the body.
+// Acknowledged and discarded.
 func (h *SystemHandler) SessionCapabilitiesFull(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
 // ClientLogDocument handles POST /ClientLog/Document.
-// Clients send log entries to the server for diagnostics. When the proxy
-// log level is set to debug the entries are logged, otherwise discarded.
+// Logged at debug level, otherwise discarded.
 func (h *SystemHandler) ClientLogDocument(c *gin.Context) {
 	if slog.Default().Enabled(c.Request.Context(), slog.LevelDebug) {
 		body, _ := io.ReadAll(io.LimitReader(c.Request.Body, 64*1024))
@@ -148,8 +131,7 @@ func (h *SystemHandler) ClientLogDocument(c *gin.Context) {
 }
 
 // DisplayPreferencesGet handles GET /DisplayPreferences/{id}.
-// Returns stored display/UI preferences for the user, falling back to
-// sensible defaults if nothing has been saved yet.
+// Falls back to defaults if nothing has been saved yet.
 func (h *SystemHandler) DisplayPreferencesGet(c *gin.Context) {
 	id := c.Param("id")
 	client := c.Query("client")
@@ -185,8 +167,6 @@ func (h *SystemHandler) DisplayPreferencesGet(c *gin.Context) {
 }
 
 // DisplayPreferencesUpdate handles POST /DisplayPreferences/{id}.
-// Stores the client's display preference payload so it survives across
-// page reloads within the same proxy session.
 func (h *SystemHandler) DisplayPreferencesUpdate(c *gin.Context) {
 	id := c.Param("id")
 	client := c.Query("client")
@@ -208,8 +188,6 @@ func (h *SystemHandler) DisplayPreferencesUpdate(c *gin.Context) {
 }
 
 // GetEndpointInfo handles GET /System/Endpoint.
-// Returns the client's IP address and whether the connection is on the local network.
-// Used by the web UI to determine local vs remote access.
 func (h *SystemHandler) GetEndpointInfo(c *gin.Context) {
 	ip := c.ClientIP()
 	c.JSON(http.StatusOK, gin.H{
@@ -219,27 +197,22 @@ func (h *SystemHandler) GetEndpointInfo(c *gin.Context) {
 }
 
 // ActivityLogEntries handles GET /System/ActivityLog/Entries.
-// Returns an empty log — the proxy does not record activity.
 func (h *SystemHandler) ActivityLogEntries(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"Items": []interface{}{}, "TotalRecordCount": 0, "StartIndex": 0})
 }
 
 // InfoStorage handles GET /System/Info/Storage.
-// Returns an empty drives list — storage info is not meaningful cross-backend.
 func (h *SystemHandler) InfoStorage(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"Drives": []interface{}{}})
 }
 
 // GetDevices handles GET /Devices.
-// Returns an empty list — device management is not supported cross-backend.
 func (h *SystemHandler) GetDevices(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"Items": []interface{}{}, "TotalRecordCount": 0, "StartIndex": 0})
 }
 
 // GetConfiguration handles GET /System/Configuration.
-// Returns a minimal config object so the admin UI renders without errors.
-// Flags that would expose unsupported multi-backend admin features are
-// explicitly disabled so the web UI does not offer them.
+// Unsupported multi-backend admin features are explicitly disabled.
 func (h *SystemHandler) GetConfiguration(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"LogFileRetentionDays":             3,
@@ -284,7 +257,6 @@ func (h *SystemHandler) GetConfiguration(c *gin.Context) {
 }
 
 // GetConfigurationNetwork handles GET /System/Configuration/network.
-// Returns a minimal network config stub.
 func (h *SystemHandler) GetConfigurationNetwork(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{
 		"RequireHttps":              false,
@@ -307,13 +279,11 @@ func (h *SystemHandler) GetConfigurationNetwork(c *gin.Context) {
 }
 
 // GetParentalRatings handles GET /ParentalRatings.
-// Returns an empty list — parental rating enforcement is handled by the backends.
 func (h *SystemHandler) GetParentalRatings(c *gin.Context) {
 	c.JSON(http.StatusOK, []interface{}{})
 }
 
 // GetLocalizationOptions handles GET /Localization/Options.
-// Returns an empty list — the proxy does not support localization settings.
 func (h *SystemHandler) GetLocalizationOptions(c *gin.Context) {
 	c.JSON(http.StatusOK, []interface{}{})
 }
@@ -403,21 +373,17 @@ var countries = []gin.H{
 }
 
 // GetLocalizationCultures handles GET /Localization/Cultures.
-// Returns a common set of cultures so the display-preferences language
-// dropdowns populate correctly in the Jellyfin web UI.
 func (h *SystemHandler) GetLocalizationCultures(c *gin.Context) {
 	c.JSON(http.StatusOK, cultures)
 }
 
 // GetLocalizationCountries handles GET /Localization/Countries.
-// Returns a common set of countries for region/metadata preference dropdowns.
 func (h *SystemHandler) GetLocalizationCountries(c *gin.Context) {
 	c.JSON(http.StatusOK, countries)
 }
 
 // BitrateTest handles GET /Playback/BitrateTest.
-// Returns Size bytes of zero-value data so the client can measure available bandwidth.
-// Streams in fixed-size chunks to avoid allocating the full buffer at once.
+// Returns Size bytes of zeroes for bandwidth measurement.
 func (h *SystemHandler) BitrateTest(c *gin.Context) {
 	size, err := strconv.ParseInt(c.Query("Size"), 10, 64)
 	if err != nil || size <= 0 {
@@ -448,14 +414,12 @@ func (h *SystemHandler) BitrateTest(c *gin.Context) {
 	}
 }
 
-// HealthLive handles GET /health — always returns 200.
-// Used as a liveness probe by container orchestrators.
+// HealthLive handles GET /health (liveness probe).
 func (h *SystemHandler) HealthLive(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{"status": "ok"})
 }
 
-// HealthReady handles GET /ready — checks DB connectivity.
-// Used as a readiness probe: returns 503 if the DB is unreachable.
+// HealthReady handles GET /ready (readiness probe — checks DB connectivity).
 func (h *SystemHandler) HealthReady(c *gin.Context) {
 	// Quick DB ping.
 	if _, err := h.db.User.Query().Limit(1).Count(c.Request.Context()); err != nil {

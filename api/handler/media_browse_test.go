@@ -111,7 +111,7 @@ func setupBrowseDB(fakeURL string) {
 	b, err := db.Backend.Create().
 		SetName("Browse Backend").
 		SetURL(fakeURL).
-		SetJellyfinServerID(browsePrefix).
+		SetExternalID(browsePrefix).
 		Save(mediaCtx())
 	Expect(err).NotTo(HaveOccurred())
 

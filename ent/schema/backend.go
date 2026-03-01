@@ -23,8 +23,8 @@ func (Backend) Fields() []ent.Field {
 		field.String("url").
 			NotEmpty().
 			Comment("Base URL of the backend Jellyfin server, e.g. https://media.example.com"),
-		// The server ID reported by Jellyfin's /System/Info endpoint.
-		field.String("jellyfin_server_id").
+		// The server ID reported by the backend's /System/Info endpoint.
+		field.String("external_id").
 			Unique().
 			NotEmpty(),
 		field.Bool("enabled").

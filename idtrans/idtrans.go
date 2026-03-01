@@ -5,7 +5,7 @@
 // that the Jellyfin Kotlin SDK (and other strict clients) can parse them.
 //
 // Encoding uses UUID v5 (SHA-1) with a per-server namespace derived from the
-// backend's jellyfin_server_id. The mapping is cached in memory for O(1)
+// backend's external_id. The mapping is cached in memory for O(1)
 // reverse lookups. No database table is required.
 package idtrans
 
@@ -27,7 +27,6 @@ var baseNamespace = uuid.MustParse("f47ac10b-58cc-4372-a567-0e02b2c3d479")
 // recompute it on every Encode call.
 var serverNamespaces sync.Map // map[string]uuid.UUID
 
-// serverNamespace returns a deterministic namespace UUID for a given server ID.
 func serverNamespace(serverID string) uuid.UUID {
 	if v, ok := serverNamespaces.Load(serverID); ok {
 		return v.(uuid.UUID)
@@ -37,33 +36,36 @@ func serverNamespace(serverID string) uuid.UUID {
 	return ns
 }
 
-// idMapping holds the original (serverID, backendID) pair for a proxy UUID.
+// idMapping holds the original (serverID, itemID) pair for a proxy UUID.
 type idMapping struct {
-	serverID  string
-	backendID string
+	serverID string
+	itemID   string
 }
 
 var (
-	// forward: "serverID\x00backendID" → dashless proxy UUID
+	// forward: "serverID\x00itemID" → dashless proxy UUID
 	forwardCache sync.Map // map[string]string
 	// reverse: dashless proxy UUID → idMapping
+	//
+	// TODO: consider LRU eviction for long-running instances — every unique
+	// (serverID, itemID) pair ever seen stays in memory indefinitely.
 	reverseCache sync.Map // map[string]idMapping
 )
 
-func forwardKey(serverID, backendID string) string {
-	return serverID + "\x00" + backendID
+func forwardKey(serverID, itemID string) string {
+	return serverID + "\x00" + itemID
 }
 
 // Encode creates a proxy-scoped 32-char hex ID (dashless UUID v5) from a
-// backend's jellyfin_server_id and the item's backend ID. The mapping is
-// cached for O(1) reverse lookup via Decode.
-// Returns an empty string if backendID is empty.
-func Encode(serverID, backendID string) string {
-	if backendID == "" {
+// backend's external_id and the item's original ID on that backend. The
+// mapping is cached for O(1) reverse lookup via Decode.
+// Returns an empty string if itemID is empty.
+func Encode(serverID, itemID string) string {
+	if itemID == "" {
 		return ""
 	}
 
-	key := forwardKey(serverID, backendID)
+	key := forwardKey(serverID, itemID)
 
 	// Fast path: check cache.
 	if v, ok := forwardCache.Load(key); ok {
@@ -72,23 +74,22 @@ func Encode(serverID, backendID string) string {
 
 	// Generate deterministic UUID v5.
 	ns := serverNamespace(serverID)
-	proxyUUID := uuid.NewSHA1(ns, []byte(backendID))
+	proxyUUID := uuid.NewSHA1(ns, []byte(itemID))
 	dashless := strings.ReplaceAll(proxyUUID.String(), "-", "")
 
 	// Store in both directions.
 	forwardCache.Store(key, dashless)
-	reverseCache.Store(dashless, idMapping{serverID: serverID, backendID: backendID})
+	reverseCache.Store(dashless, idMapping{serverID: serverID, itemID: itemID})
 
 	return dashless
 }
 
-// Decode extracts the backend server ID and original backend item ID from a
-// proxy ID.
+// Decode extracts the backend server ID and original item ID from a proxy ID.
 //
 // It checks the in-memory reverse cache first, then falls back to the legacy
-// "prefix_backendID" format for backward compatibility during migration.
-func Decode(proxyID string) (serverID, backendID string, err error) {
-	// Legacy format: "prefix_backendID"
+// "prefix_itemID" format for backward compatibility during migration.
+func Decode(proxyID string) (serverID, itemID string, err error) {
+	// Legacy format: "prefix_itemID"
 	if strings.Contains(proxyID, "_") {
 		idx := strings.Index(proxyID, "_")
 		if idx <= 0 {
@@ -103,15 +104,14 @@ func Decode(proxyID string) (serverID, backendID string, err error) {
 	// Look up in reverse cache.
 	if v, ok := reverseCache.Load(normalised); ok {
 		m := v.(idMapping)
-		return m.serverID, m.backendID, nil
+		return m.serverID, m.itemID, nil
 	}
 
 	return "", proxyID, fmt.Errorf("idtrans: %q not found in ID cache", proxyID)
 }
 
-// DecodePrefix returns only the server ID from a proxy ID.
-// Named DecodePrefix for backward compatibility with existing callers.
-func DecodePrefix(proxyID string) (string, error) {
+// DecodeServerID returns only the server ID from a proxy ID.
+func DecodeServerID(proxyID string) (string, error) {
 	serverID, _, err := Decode(proxyID)
 	return serverID, err
 }
@@ -133,7 +133,6 @@ var mergedToUUID sync.Map // map[string]string
 // uuidToMerged caches the dashless-UUID → collectionType reverse mapping.
 var uuidToMerged sync.Map // map[string]string
 
-// mergedUUID returns the deterministic dashless UUID for a collection type.
 func mergedUUID(collectionType string) string {
 	if v, ok := mergedToUUID.Load(collectionType); ok {
 		return v.(string)
@@ -151,8 +150,7 @@ func EncodeMerged(collectionType string) string {
 	return mergedUUID(collectionType)
 }
 
-// DecodeMerged returns the CollectionType from a merged virtual UUID, and
-// whether the ID is a merged ID at all.
+// DecodeMerged returns the CollectionType if proxyID is a merged virtual ID.
 func DecodeMerged(proxyID string) (collectionType string, ok bool) {
 	// Normalise: strip dashes if the client sent a dashed UUID.
 	normalised := strings.ReplaceAll(proxyID, "-", "")

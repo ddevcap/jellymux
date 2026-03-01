@@ -49,11 +49,11 @@ func viewsRouter() *gin.Engine {
 
 // registerViewsBackend creates a backend + user mapping for the single user in
 // the DB (created by the test BeforeEach).
-func registerViewsBackend(name, url, jellyfinServerID, backendUserID string) {
+func registerViewsBackend(name, url, externalID, backendUserID string) {
 	b, err := db.Backend.Create().
 		SetName(name).
 		SetURL(url).
-		SetJellyfinServerID(jellyfinServerID).
+		SetExternalID(externalID).
 		Save(mediaCtx())
 	Expect(err).NotTo(HaveOccurred())
 

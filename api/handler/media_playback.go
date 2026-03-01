@@ -45,7 +45,7 @@ func (h *MediaHandler) GetPlaybackInfo(c *gin.Context) {
 	// - replace backend host with proxy ExternalURL
 	// - replace bare item IDs (hex + UUID form) with proxy-prefixed IDs
 	// - strip backend ApiKey (proxy handles auth)
-	proxyID := idtrans.Encode(sc.JellyfinServerID(), backendID)
+	proxyID := idtrans.Encode(sc.ExternalID(), backendID)
 	respBody = rewritePlaybackInfoURLs(respBody, backendID, proxyID, sc.ServerURL(), h.cfg.ExternalURL)
 
 	// Inject the proxy session token into streaming URLs. Browsers' <video>

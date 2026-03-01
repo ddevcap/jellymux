@@ -27,10 +27,10 @@ func init() {
 	backendDescURL := backendFields[2].Descriptor()
 	// backend.URLValidator is a validator for the "url" field. It is called by the builders before save.
 	backend.URLValidator = backendDescURL.Validators[0].(func(string) error)
-	// backendDescJellyfinServerID is the schema descriptor for jellyfin_server_id field.
-	backendDescJellyfinServerID := backendFields[3].Descriptor()
-	// backend.JellyfinServerIDValidator is a validator for the "jellyfin_server_id" field. It is called by the builders before save.
-	backend.JellyfinServerIDValidator = backendDescJellyfinServerID.Validators[0].(func(string) error)
+	// backendDescExternalID is the schema descriptor for external_id field.
+	backendDescExternalID := backendFields[3].Descriptor()
+	// backend.ExternalIDValidator is a validator for the "external_id" field. It is called by the builders before save.
+	backend.ExternalIDValidator = backendDescExternalID.Validators[0].(func(string) error)
 	// backendDescEnabled is the schema descriptor for enabled field.
 	backendDescEnabled := backendFields[4].Descriptor()
 	// backend.DefaultEnabled holds the default value on creation for the enabled field.

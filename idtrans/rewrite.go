@@ -40,21 +40,22 @@ var serverIDFields = map[string]bool{
 	"ServerId": true,
 }
 
-// RewriteResponse encodes all item IDs in a backend JSON response by
-// prepending prefix, and replaces all server ID fields with proxyServerID.
+// RewriteResponse encodes all item IDs in a backend JSON response using the
+// backend's externalID as namespace, and replaces all server ID fields with
+// proxyServerID.
 //
 // The returned bytes are a freshly marshalled JSON document.
-func RewriteResponse(b []byte, prefix, proxyServerID string, backend *BackendInfo) ([]byte, error) {
+func RewriteResponse(b []byte, externalID, proxyServerID string, backend *BackendInfo) ([]byte, error) {
 	var v interface{}
 	if err := json.Unmarshal(b, &v); err != nil {
 		return nil, err
 	}
-	rewriteNode(v, func(id string) string { return Encode(prefix, id) }, proxyServerID, backend)
+	rewriteNode(v, func(id string) string { return Encode(externalID, id) }, proxyServerID, backend)
 	return json.Marshal(v)
 }
 
-// RewriteRequest strips the proxy prefix from all item ID fields in a JSON
-// request body before it is forwarded to a backend server.
+// RewriteRequest decodes proxy UUIDs back to backend item IDs in all item ID
+// fields of a JSON request body before it is forwarded to a backend server.
 // Server ID fields are left untouched.
 func RewriteRequest(b []byte) ([]byte, error) {
 	var v interface{}
@@ -62,11 +63,11 @@ func RewriteRequest(b []byte) ([]byte, error) {
 		return nil, err
 	}
 	rewriteNode(v, func(id string) string {
-		_, backendID, err := Decode(id)
+		_, itemID, err := Decode(id)
 		if err != nil {
 			return id // not a proxy ID — pass through unchanged
 		}
-		return backendID
+		return itemID
 	}, "" /* do not touch server IDs in outgoing requests */, nil)
 	return json.Marshal(v)
 }

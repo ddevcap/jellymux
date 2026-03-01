@@ -22,8 +22,8 @@ type Backend struct {
 	Name string `json:"name,omitempty"`
 	// Base URL of the backend Jellyfin server, e.g. https://media.example.com
 	URL string `json:"url,omitempty"`
-	// JellyfinServerID holds the value of the "jellyfin_server_id" field.
-	JellyfinServerID string `json:"jellyfin_server_id,omitempty"`
+	// ExternalID holds the value of the "external_id" field.
+	ExternalID string `json:"external_id,omitempty"`
 	// Enabled holds the value of the "enabled" field.
 	Enabled bool `json:"enabled,omitempty"`
 	// CreatedAt holds the value of the "created_at" field.
@@ -59,7 +59,7 @@ func (*Backend) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case backend.FieldEnabled:
 			values[i] = new(sql.NullBool)
-		case backend.FieldName, backend.FieldURL, backend.FieldJellyfinServerID:
+		case backend.FieldName, backend.FieldURL, backend.FieldExternalID:
 			values[i] = new(sql.NullString)
 		case backend.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -98,11 +98,11 @@ func (_m *Backend) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.URL = value.String
 			}
-		case backend.FieldJellyfinServerID:
+		case backend.FieldExternalID:
 			if value, ok := values[i].(*sql.NullString); !ok {
-				return fmt.Errorf("unexpected type %T for field jellyfin_server_id", values[i])
+				return fmt.Errorf("unexpected type %T for field external_id", values[i])
 			} else if value.Valid {
-				_m.JellyfinServerID = value.String
+				_m.ExternalID = value.String
 			}
 		case backend.FieldEnabled:
 			if value, ok := values[i].(*sql.NullBool); !ok {
@@ -163,8 +163,8 @@ func (_m *Backend) String() string {
 	builder.WriteString("url=")
 	builder.WriteString(_m.URL)
 	builder.WriteString(", ")
-	builder.WriteString("jellyfin_server_id=")
-	builder.WriteString(_m.JellyfinServerID)
+	builder.WriteString("external_id=")
+	builder.WriteString(_m.ExternalID)
 	builder.WriteString(", ")
 	builder.WriteString("enabled=")
 	builder.WriteString(fmt.Sprintf("%v", _m.Enabled))

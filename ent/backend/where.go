@@ -66,9 +66,9 @@ func URL(v string) predicate.Backend {
 	return predicate.Backend(sql.FieldEQ(FieldURL, v))
 }
 
-// JellyfinServerID applies equality check predicate on the "jellyfin_server_id" field. It's identical to JellyfinServerIDEQ.
-func JellyfinServerID(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldEQ(FieldJellyfinServerID, v))
+// ExternalID applies equality check predicate on the "external_id" field. It's identical to ExternalIDEQ.
+func ExternalID(v string) predicate.Backend {
+	return predicate.Backend(sql.FieldEQ(FieldExternalID, v))
 }
 
 // Enabled applies equality check predicate on the "enabled" field. It's identical to EnabledEQ.
@@ -211,69 +211,69 @@ func URLContainsFold(v string) predicate.Backend {
 	return predicate.Backend(sql.FieldContainsFold(FieldURL, v))
 }
 
-// JellyfinServerIDEQ applies the EQ predicate on the "jellyfin_server_id" field.
-func JellyfinServerIDEQ(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldEQ(FieldJellyfinServerID, v))
+// ExternalIDEQ applies the EQ predicate on the "external_id" field.
+func ExternalIDEQ(v string) predicate.Backend {
+	return predicate.Backend(sql.FieldEQ(FieldExternalID, v))
 }
 
-// JellyfinServerIDNEQ applies the NEQ predicate on the "jellyfin_server_id" field.
-func JellyfinServerIDNEQ(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldNEQ(FieldJellyfinServerID, v))
+// ExternalIDNEQ applies the NEQ predicate on the "external_id" field.
+func ExternalIDNEQ(v string) predicate.Backend {
+	return predicate.Backend(sql.FieldNEQ(FieldExternalID, v))
 }
 
-// JellyfinServerIDIn applies the In predicate on the "jellyfin_server_id" field.
-func JellyfinServerIDIn(vs ...string) predicate.Backend {
-	return predicate.Backend(sql.FieldIn(FieldJellyfinServerID, vs...))
+// ExternalIDIn applies the In predicate on the "external_id" field.
+func ExternalIDIn(vs ...string) predicate.Backend {
+	return predicate.Backend(sql.FieldIn(FieldExternalID, vs...))
 }
 
-// JellyfinServerIDNotIn applies the NotIn predicate on the "jellyfin_server_id" field.
-func JellyfinServerIDNotIn(vs ...string) predicate.Backend {
-	return predicate.Backend(sql.FieldNotIn(FieldJellyfinServerID, vs...))
+// ExternalIDNotIn applies the NotIn predicate on the "external_id" field.
+func ExternalIDNotIn(vs ...string) predicate.Backend {
+	return predicate.Backend(sql.FieldNotIn(FieldExternalID, vs...))
 }
 
-// JellyfinServerIDGT applies the GT predicate on the "jellyfin_server_id" field.
-func JellyfinServerIDGT(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldGT(FieldJellyfinServerID, v))
+// ExternalIDGT applies the GT predicate on the "external_id" field.
+func ExternalIDGT(v string) predicate.Backend {
+	return predicate.Backend(sql.FieldGT(FieldExternalID, v))
 }
 
-// JellyfinServerIDGTE applies the GTE predicate on the "jellyfin_server_id" field.
-func JellyfinServerIDGTE(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldGTE(FieldJellyfinServerID, v))
+// ExternalIDGTE applies the GTE predicate on the "external_id" field.
+func ExternalIDGTE(v string) predicate.Backend {
+	return predicate.Backend(sql.FieldGTE(FieldExternalID, v))
 }
 
-// JellyfinServerIDLT applies the LT predicate on the "jellyfin_server_id" field.
-func JellyfinServerIDLT(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldLT(FieldJellyfinServerID, v))
+// ExternalIDLT applies the LT predicate on the "external_id" field.
+func ExternalIDLT(v string) predicate.Backend {
+	return predicate.Backend(sql.FieldLT(FieldExternalID, v))
 }
 
-// JellyfinServerIDLTE applies the LTE predicate on the "jellyfin_server_id" field.
-func JellyfinServerIDLTE(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldLTE(FieldJellyfinServerID, v))
+// ExternalIDLTE applies the LTE predicate on the "external_id" field.
+func ExternalIDLTE(v string) predicate.Backend {
+	return predicate.Backend(sql.FieldLTE(FieldExternalID, v))
 }
 
-// JellyfinServerIDContains applies the Contains predicate on the "jellyfin_server_id" field.
-func JellyfinServerIDContains(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldContains(FieldJellyfinServerID, v))
+// ExternalIDContains applies the Contains predicate on the "external_id" field.
+func ExternalIDContains(v string) predicate.Backend {
+	return predicate.Backend(sql.FieldContains(FieldExternalID, v))
 }
 
-// JellyfinServerIDHasPrefix applies the HasPrefix predicate on the "jellyfin_server_id" field.
-func JellyfinServerIDHasPrefix(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldHasPrefix(FieldJellyfinServerID, v))
+// ExternalIDHasPrefix applies the HasPrefix predicate on the "external_id" field.
+func ExternalIDHasPrefix(v string) predicate.Backend {
+	return predicate.Backend(sql.FieldHasPrefix(FieldExternalID, v))
 }
 
-// JellyfinServerIDHasSuffix applies the HasSuffix predicate on the "jellyfin_server_id" field.
-func JellyfinServerIDHasSuffix(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldHasSuffix(FieldJellyfinServerID, v))
+// ExternalIDHasSuffix applies the HasSuffix predicate on the "external_id" field.
+func ExternalIDHasSuffix(v string) predicate.Backend {
+	return predicate.Backend(sql.FieldHasSuffix(FieldExternalID, v))
 }
 
-// JellyfinServerIDEqualFold applies the EqualFold predicate on the "jellyfin_server_id" field.
-func JellyfinServerIDEqualFold(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldEqualFold(FieldJellyfinServerID, v))
+// ExternalIDEqualFold applies the EqualFold predicate on the "external_id" field.
+func ExternalIDEqualFold(v string) predicate.Backend {
+	return predicate.Backend(sql.FieldEqualFold(FieldExternalID, v))
 }
 
-// JellyfinServerIDContainsFold applies the ContainsFold predicate on the "jellyfin_server_id" field.
-func JellyfinServerIDContainsFold(v string) predicate.Backend {
-	return predicate.Backend(sql.FieldContainsFold(FieldJellyfinServerID, v))
+// ExternalIDContainsFold applies the ContainsFold predicate on the "external_id" field.
+func ExternalIDContainsFold(v string) predicate.Backend {
+	return predicate.Backend(sql.FieldContainsFold(FieldExternalID, v))
 }
 
 // EnabledEQ applies the EQ predicate on the "enabled" field.

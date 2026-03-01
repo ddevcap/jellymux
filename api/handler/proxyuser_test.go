@@ -297,7 +297,7 @@ var _ = Describe("ProxyUserHandler", func() {
 				Expect(r).To(HaveKey("mapping_id"))
 				Expect(r).To(HaveKey("backend_id"))
 				Expect(r).To(HaveKey("backend_url"))
-				Expect(r).To(HaveKey("jellyfin_server_id"))
+				Expect(r).To(HaveKey("external_id"))
 				Expect(r).To(HaveKey("backend_user_id"))
 				Expect(r).To(HaveKey("enabled"))
 			})

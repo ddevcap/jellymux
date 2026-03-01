@@ -15,7 +15,6 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-// BcryptCost is the bcrypt work factor used for all password hashing in the proxy.
 const BcryptCost = 12
 
 type AuthHandler struct {
@@ -40,8 +39,6 @@ type authenticateRequest struct {
 }
 
 // AuthenticateByName handles POST /Users/AuthenticateByName.
-// It validates credentials, creates a session token, and returns the
-// Jellyfin-compatible auth response that clients expect.
 func (h *AuthHandler) AuthenticateByName(c *gin.Context) {
 	var req authenticateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -94,7 +91,7 @@ func (h *AuthHandler) AuthenticateByName(c *gin.Context) {
 	userObj["LastLoginDate"] = now
 	userObj["LastActivityDate"] = now
 
-	serverID := strings.ReplaceAll(h.cfg.ServerID, "-", "")
+	serverID := dashlessID(h.cfg.ServerID)
 
 	c.JSON(http.StatusOK, gin.H{
 		"User": userObj,
@@ -115,8 +112,8 @@ func (h *AuthHandler) AuthenticateByName(c *gin.Context) {
 			},
 			"RemoteEndPoint":           c.ClientIP(),
 			"PlayableMediaTypes":       []string{"Audio", "Video"},
-			"Id":                       jellyfinID(sess.ID),
-			"UserId":                   jellyfinID(user.ID),
+			"Id":                       dashlessUUID(sess.ID),
+			"UserId":                   dashlessUUID(user.ID),
 			"UserName":                 user.Username,
 			"Client":                   appName,
 			"LastActivityDate":         now,
@@ -229,8 +226,7 @@ func (h *AuthHandler) UpdatePassword(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-// Logout handles DELETE /Sessions/Logout and POST /Sessions/Logout.
-// It deletes the token so subsequent requests with it are rejected.
+// Logout handles DELETE|POST /Sessions/Logout.
 func (h *AuthHandler) Logout(c *gin.Context) {
 	raw, exists := c.Get(middleware.ContextKeySession)
 	if !exists {

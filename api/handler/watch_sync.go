@@ -65,7 +65,7 @@ func (h *MediaHandler) syncWatchState(
 
 	// 2. For each other backend, search for a matching item and apply the action.
 	for _, sc := range allClients {
-		if sc.JellyfinServerID() == sourceServerID {
+		if sc.ExternalID() == sourceServerID {
 			continue // skip the source backend
 		}
 
@@ -130,12 +130,12 @@ func (h *MediaHandler) syncWatchState(
 				_, actionStatus, err := sc.ProxyJSON(syncCtx, method, path, nil, nil)
 				if err != nil {
 					slog.Debug("watch-state sync failed",
-						"backend", sc.JellyfinServerID(),
+						"backend", sc.ExternalID(),
 						"item", candidate.Id,
 						"error", err)
 				} else {
 					slog.Info("watch-state synced",
-						"backend", sc.JellyfinServerID(),
+						"backend", sc.ExternalID(),
 						"item", candidate.Id,
 						"action", method+" "+collection,
 						"status", actionStatus)

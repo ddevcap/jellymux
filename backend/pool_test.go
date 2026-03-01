@@ -23,11 +23,11 @@ var _ = Describe("Pool", func() {
 		pool = backend.NewPool(db, config.Config{ServerID: "proxy-id"})
 	})
 
-	newBackend := func(name, url, jellyfinServerID string) *ent.Backend {
+	newBackend := func(name, url, externalID string) *ent.Backend {
 		return db.Backend.Create().
 			SetName(name).
 			SetURL(url).
-			SetJellyfinServerID(jellyfinServerID).
+			SetExternalID(externalID).
 			SetEnabled(true).
 			SaveX(ctx)
 	}
@@ -61,7 +61,7 @@ var _ = Describe("Pool", func() {
 			sc, err := pool.ForUser(ctx, "mov", u)
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(sc.JellyfinServerID()).To(Equal("mov"))
+			Expect(sc.ExternalID()).To(Equal("mov"))
 			Expect(sc.Token()).To(BeEmpty())
 			Expect(sc.BackendUserID()).To(BeEmpty())
 		})
@@ -113,7 +113,7 @@ var _ = Describe("Pool", func() {
 
 			Expect(err).NotTo(HaveOccurred())
 			Expect(clients).To(HaveLen(2))
-			serverIDs := []string{clients[0].JellyfinServerID(), clients[1].JellyfinServerID()}
+			serverIDs := []string{clients[0].ExternalID(), clients[1].ExternalID()}
 			Expect(serverIDs).To(ConsistOf("mov", "tv"))
 		})
 
@@ -146,7 +146,7 @@ var _ = Describe("Pool", func() {
 			sc, err := pool.ForBackend(ctx, "mov")
 
 			Expect(err).NotTo(HaveOccurred())
-			Expect(sc.JellyfinServerID()).To(Equal("mov"))
+			Expect(sc.ExternalID()).To(Equal("mov"))
 			Expect(sc.Token()).To(BeEmpty())
 		})
 

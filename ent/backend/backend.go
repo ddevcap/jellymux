@@ -19,8 +19,8 @@ const (
 	FieldName = "name"
 	// FieldURL holds the string denoting the url field in the database.
 	FieldURL = "url"
-	// FieldJellyfinServerID holds the string denoting the jellyfin_server_id field in the database.
-	FieldJellyfinServerID = "jellyfin_server_id"
+	// FieldExternalID holds the string denoting the external_id field in the database.
+	FieldExternalID = "external_id"
 	// FieldEnabled holds the string denoting the enabled field in the database.
 	FieldEnabled = "enabled"
 	// FieldCreatedAt holds the string denoting the created_at field in the database.
@@ -43,7 +43,7 @@ var Columns = []string{
 	FieldID,
 	FieldName,
 	FieldURL,
-	FieldJellyfinServerID,
+	FieldExternalID,
 	FieldEnabled,
 	FieldCreatedAt,
 }
@@ -63,8 +63,8 @@ var (
 	NameValidator func(string) error
 	// URLValidator is a validator for the "url" field. It is called by the builders before save.
 	URLValidator func(string) error
-	// JellyfinServerIDValidator is a validator for the "jellyfin_server_id" field. It is called by the builders before save.
-	JellyfinServerIDValidator func(string) error
+	// ExternalIDValidator is a validator for the "external_id" field. It is called by the builders before save.
+	ExternalIDValidator func(string) error
 	// DefaultEnabled holds the default value on creation for the "enabled" field.
 	DefaultEnabled bool
 	// DefaultCreatedAt holds the default value on creation for the "created_at" field.
@@ -91,9 +91,9 @@ func ByURL(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldURL, opts...).ToFunc()
 }
 
-// ByJellyfinServerID orders the results by the jellyfin_server_id field.
-func ByJellyfinServerID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldJellyfinServerID, opts...).ToFunc()
+// ByExternalID orders the results by the external_id field.
+func ByExternalID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldExternalID, opts...).ToFunc()
 }
 
 // ByEnabled orders the results by the enabled field.

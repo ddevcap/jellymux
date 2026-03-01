@@ -25,25 +25,14 @@ type ServerClient struct {
 	pool          *Pool
 }
 
-// JellyfinServerID returns the backend server's Jellyfin server ID.
-// Used as the namespace key for idtrans.Encode/Decode.
-func (sc *ServerClient) JellyfinServerID() string { return sc.backend.JellyfinServerID }
-
-// BackendUserID returns the user's ID on the backend server.
+func (sc *ServerClient) ExternalID() string    { return sc.backend.ExternalID }
 func (sc *ServerClient) BackendUserID() string { return sc.backendUserID }
+func (sc *ServerClient) ServerURL() string     { return strings.TrimRight(sc.backend.URL, "/") }
+func (sc *ServerClient) Token() string         { return sc.token }
 
-// ServerURL returns the backend server's base URL (e.g. "http://nas:8096").
-func (sc *ServerClient) ServerURL() string { return strings.TrimRight(sc.backend.URL, "/") }
-
-// Token returns the authentication token used for this backend connection.
-// Used to re-inject ApiKey into HLS playlist/segment URLs after stripping it
-// from PlaybackInfo responses.
-func (sc *ServerClient) Token() string { return sc.token }
-
-// DirectURL builds a fully-qualified URL pointing directly at the backend,
-// with query params encoded and ApiKey injected. Used for direct-stream
-// redirects so the client fetches bytes from the backend without going through
-// the proxy.
+// DirectURL builds a fully-qualified backend URL with ApiKey injected.
+// Used for direct-stream redirects (302) so the client fetches from the
+// backend without going through the proxy.
 func (sc *ServerClient) DirectURL(path string, query url.Values) string {
 	q := make(url.Values, len(query)+1)
 	for k, v := range query {
@@ -94,7 +83,7 @@ func (sc *ServerClient) ProxyJSON(ctx context.Context, method, path string, quer
 		Name: sc.backend.Name,
 		URL:  sc.backend.URL,
 	}
-	translated, err := idtrans.RewriteResponse(raw, sc.backend.JellyfinServerID, strings.ReplaceAll(sc.pool.cfg.ServerID, "-", ""), bi)
+	translated, err := idtrans.RewriteResponse(raw, sc.backend.ExternalID, sc.pool.proxyServerID, bi)
 	if err != nil {
 		// Non-JSON body (e.g. an image accidentally routed here): pass through.
 		return raw, resp.StatusCode, nil
@@ -177,8 +166,8 @@ func (sc *ServerClient) ProxyStream(ctx context.Context, method, path string, qu
 }
 
 // newRequest builds an authenticated HTTP request for the backend server.
-// If body is non-nil its item IDs are stripped of the proxy prefix before
-// sending, and any UserId field is replaced with the backend user ID.
+// If body is non-nil, proxy UUIDs are decoded back to backend IDs and any
+// UserId is replaced with the backend user ID.
 func (sc *ServerClient) newRequest(ctx context.Context, method, path string, query url.Values, body []byte) (*http.Request, error) {
 	var reqBody io.Reader
 	if len(body) > 0 {
@@ -186,7 +175,6 @@ func (sc *ServerClient) newRequest(ctx context.Context, method, path string, que
 		if err != nil {
 			translated = body // best-effort: send original on parse failure
 		}
-		// Replace proxy UserId with the backend user ID in the request body.
 		if sc.backendUserID != "" {
 			translated = rewriteBodyUserID(translated, sc.backendUserID)
 		}
@@ -204,8 +192,7 @@ func (sc *ServerClient) newRequest(ctx context.Context, method, path string, que
 	return req, nil
 }
 
-// rewriteBodyUserID replaces the value of any "UserId" key in a JSON object
-// with backendUserID. Handles both "UserId" and "userId" casings.
+// rewriteBodyUserID replaces "UserId" (any casing) in a JSON object body.
 func rewriteBodyUserID(body []byte, backendUserID string) []byte {
 	var m map[string]interface{}
 	if err := json.Unmarshal(body, &m); err != nil {
@@ -236,9 +223,8 @@ func (sc *ServerClient) buildURL(path string, query url.Values) string {
 	return u
 }
 
-// copyStreamHeaders selectively copies backend response headers that are
-// required for media playback, discarding anything that would reveal the
-// backend's identity or interfere with the proxy.
+// copyStreamHeaders copies only the backend response headers needed for
+// media playback.
 func copyStreamHeaders(src, dst http.Header) {
 	for _, h := range []string{
 		"Content-Type",

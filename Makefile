@@ -1,4 +1,4 @@
-.PHONY: test e2e e2e-up e2e-down jellyfin-up jellyfin-down jellyfin-setup
+.PHONY: test e2e e2e-up e2e-down jellyfin-up jellyfin-down jellyfin-reset jellyfin-setup
 
 # Run unit/integration tests (no Docker needed).
 test:
@@ -16,6 +16,19 @@ jellyfin-up:
 jellyfin-down:
 	@echo "==> Stopping Jellyfin dev servers..."
 	docker compose -f docker-compose.jellyfin.yml down
+
+# Nuke the entire dev environment (proxy, Postgres, Jellyfin servers) and recreate from scratch.
+jellyfin-reset:
+	@echo "==> Destroying proxy + Postgres (containers, images, volumes)..."
+	docker compose down -v --rmi all --remove-orphans
+	@echo "==> Destroying Jellyfin dev servers (containers, images, volumes)..."
+	docker compose -f docker-compose.jellyfin.yml down -v --rmi all --remove-orphans
+	@echo "==> Removing local Jellyfin config/cache..."
+	rm -rf ./jellyfin/server1/config ./jellyfin/server1/cache
+	rm -rf ./jellyfin/server2/config ./jellyfin/server2/cache
+	@echo "==> Recreating fresh dev environment..."
+	$(MAKE) jellyfin-up
+	docker compose up --build -d
 
 # Run the startup wizard on both servers (idempotent — skips if already done).
 jellyfin-setup:

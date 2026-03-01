@@ -42,7 +42,7 @@ type BackendMutation struct {
 	id                   *uuid.UUID
 	name                 *string
 	url                  *string
-	jellyfin_server_id   *string
+	external_id          *string
 	enabled              *bool
 	created_at           *time.Time
 	clearedFields        map[string]struct{}
@@ -230,40 +230,40 @@ func (m *BackendMutation) ResetURL() {
 	m.url = nil
 }
 
-// SetJellyfinServerID sets the "jellyfin_server_id" field.
-func (m *BackendMutation) SetJellyfinServerID(s string) {
-	m.jellyfin_server_id = &s
+// SetExternalID sets the "external_id" field.
+func (m *BackendMutation) SetExternalID(s string) {
+	m.external_id = &s
 }
 
-// JellyfinServerID returns the value of the "jellyfin_server_id" field in the mutation.
-func (m *BackendMutation) JellyfinServerID() (r string, exists bool) {
-	v := m.jellyfin_server_id
+// ExternalID returns the value of the "external_id" field in the mutation.
+func (m *BackendMutation) ExternalID() (r string, exists bool) {
+	v := m.external_id
 	if v == nil {
 		return
 	}
 	return *v, true
 }
 
-// OldJellyfinServerID returns the old "jellyfin_server_id" field's value of the Backend entity.
+// OldExternalID returns the old "external_id" field's value of the Backend entity.
 // If the Backend object wasn't provided to the builder, the object is fetched from the database.
 // An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *BackendMutation) OldJellyfinServerID(ctx context.Context) (v string, err error) {
+func (m *BackendMutation) OldExternalID(ctx context.Context) (v string, err error) {
 	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldJellyfinServerID is only allowed on UpdateOne operations")
+		return v, errors.New("OldExternalID is only allowed on UpdateOne operations")
 	}
 	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldJellyfinServerID requires an ID field in the mutation")
+		return v, errors.New("OldExternalID requires an ID field in the mutation")
 	}
 	oldValue, err := m.oldValue(ctx)
 	if err != nil {
-		return v, fmt.Errorf("querying old value for OldJellyfinServerID: %w", err)
+		return v, fmt.Errorf("querying old value for OldExternalID: %w", err)
 	}
-	return oldValue.JellyfinServerID, nil
+	return oldValue.ExternalID, nil
 }
 
-// ResetJellyfinServerID resets all changes to the "jellyfin_server_id" field.
-func (m *BackendMutation) ResetJellyfinServerID() {
-	m.jellyfin_server_id = nil
+// ResetExternalID resets all changes to the "external_id" field.
+func (m *BackendMutation) ResetExternalID() {
+	m.external_id = nil
 }
 
 // SetEnabled sets the "enabled" field.
@@ -433,8 +433,8 @@ func (m *BackendMutation) Fields() []string {
 	if m.url != nil {
 		fields = append(fields, backend.FieldURL)
 	}
-	if m.jellyfin_server_id != nil {
-		fields = append(fields, backend.FieldJellyfinServerID)
+	if m.external_id != nil {
+		fields = append(fields, backend.FieldExternalID)
 	}
 	if m.enabled != nil {
 		fields = append(fields, backend.FieldEnabled)
@@ -454,8 +454,8 @@ func (m *BackendMutation) Field(name string) (ent.Value, bool) {
 		return m.Name()
 	case backend.FieldURL:
 		return m.URL()
-	case backend.FieldJellyfinServerID:
-		return m.JellyfinServerID()
+	case backend.FieldExternalID:
+		return m.ExternalID()
 	case backend.FieldEnabled:
 		return m.Enabled()
 	case backend.FieldCreatedAt:
@@ -473,8 +473,8 @@ func (m *BackendMutation) OldField(ctx context.Context, name string) (ent.Value,
 		return m.OldName(ctx)
 	case backend.FieldURL:
 		return m.OldURL(ctx)
-	case backend.FieldJellyfinServerID:
-		return m.OldJellyfinServerID(ctx)
+	case backend.FieldExternalID:
+		return m.OldExternalID(ctx)
 	case backend.FieldEnabled:
 		return m.OldEnabled(ctx)
 	case backend.FieldCreatedAt:
@@ -502,12 +502,12 @@ func (m *BackendMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetURL(v)
 		return nil
-	case backend.FieldJellyfinServerID:
+	case backend.FieldExternalID:
 		v, ok := value.(string)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
-		m.SetJellyfinServerID(v)
+		m.SetExternalID(v)
 		return nil
 	case backend.FieldEnabled:
 		v, ok := value.(bool)
@@ -578,8 +578,8 @@ func (m *BackendMutation) ResetField(name string) error {
 	case backend.FieldURL:
 		m.ResetURL()
 		return nil
-	case backend.FieldJellyfinServerID:
-		m.ResetJellyfinServerID()
+	case backend.FieldExternalID:
+		m.ResetExternalID()
 		return nil
 	case backend.FieldEnabled:
 		m.ResetEnabled()

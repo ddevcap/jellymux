@@ -26,11 +26,11 @@ var _ = Describe("ServerClient", func() {
 
 	const proxyServerID = "proxy-server-id"
 
-	newBackend := func(name, backendURL, jellyfinServerID string) *ent.Backend {
+	newBackend := func(name, backendURL, externalID string) *ent.Backend {
 		return db.Backend.Create().
 			SetName(name).
 			SetURL(backendURL).
-			SetJellyfinServerID(jellyfinServerID).
+			SetExternalID(externalID).
 			SetEnabled(true).
 			SaveX(ctx)
 	}

@@ -193,13 +193,13 @@ func (h *ProxyUserHandler) UpdateUser(c *gin.Context) {
 
 // userBackendResponse is the user-centric view of a single BackendUser mapping.
 type userBackendResponse struct {
-	MappingID        uuid.UUID `json:"mapping_id"`
-	BackendID        uuid.UUID `json:"backend_id"`
-	BackendName      string    `json:"backend_name"`
-	BackendURL       string    `json:"backend_url"`
-	JellyfinServerID string    `json:"jellyfin_server_id"`
-	BackendUserID    string    `json:"backend_user_id"`
-	Enabled          bool      `json:"enabled"`
+	MappingID     uuid.UUID `json:"mapping_id"`
+	BackendID     uuid.UUID `json:"backend_id"`
+	BackendName   string    `json:"backend_name"`
+	BackendURL    string    `json:"backend_url"`
+	ExternalID    string    `json:"external_id"`
+	BackendUserID string    `json:"backend_user_id"`
+	Enabled       bool      `json:"enabled"`
 }
 
 // GetUserBackends handles GET /proxy/users/:id/backends.
@@ -241,7 +241,7 @@ func (h *ProxyUserHandler) GetUserBackends(c *gin.Context) {
 			r.BackendID = m.Edges.Backend.ID
 			r.BackendName = m.Edges.Backend.Name
 			r.BackendURL = m.Edges.Backend.URL
-			r.JellyfinServerID = m.Edges.Backend.JellyfinServerID
+			r.ExternalID = m.Edges.Backend.ExternalID
 		}
 		resp[i] = r
 	}

@@ -74,11 +74,11 @@ func liveTvRouter() *gin.Engine {
 
 // registerLiveTvBackend adds a backend + user mapping for the single user
 // currently in the database (created by the Live TV BeforeEach).
-func registerLiveTvBackend(name, url, jellyfinServerID, backendUserID string) {
+func registerLiveTvBackend(name, url, externalID, backendUserID string) {
 	b, err := db.Backend.Create().
 		SetName(name).
 		SetURL(url).
-		SetJellyfinServerID(jellyfinServerID).
+		SetExternalID(externalID).
 		Save(mediaCtx())
 	Expect(err).NotTo(HaveOccurred())
 
@@ -93,7 +93,7 @@ func setupMediaDB(fakeBackendURL string) string {
 	b, err := db.Backend.Create().
 		SetName("Test Backend").
 		SetURL(fakeBackendURL).
-		SetJellyfinServerID(mediaTestPrefix).
+		SetExternalID(mediaTestPrefix).
 		Save(mediaCtx())
 	Expect(err).NotTo(HaveOccurred())
 
@@ -110,7 +110,7 @@ func setupMediaDBDirectStream(fakeBackendURL string) string {
 	b, err := db.Backend.Create().
 		SetName("Test Backend").
 		SetURL(fakeBackendURL).
-		SetJellyfinServerID(mediaTestPrefix).
+		SetExternalID(mediaTestPrefix).
 		Save(mediaCtx())
 	Expect(err).NotTo(HaveOccurred())
 

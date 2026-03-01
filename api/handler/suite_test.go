@@ -86,12 +86,12 @@ func createUser(username, password string, isAdmin bool) *ent.User {
 	return u
 }
 
-// createBackend inserts a backend with a unique jellyfin_server_id.
-func createBackend(name, url, jellyfinServerID string) *ent.Backend {
+// createBackend inserts a backend with a unique external_id.
+func createBackend(name, url, externalID string) *ent.Backend {
 	b, err := db.Backend.Create().
 		SetName(name).
 		SetURL(url).
-		SetJellyfinServerID(jellyfinServerID).
+		SetExternalID(externalID).
 		Save(context.Background())
 	Expect(err).NotTo(HaveOccurred())
 	return b

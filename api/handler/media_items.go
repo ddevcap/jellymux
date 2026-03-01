@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"sort"
-	"strings"
 	"sync"
 
 	"github.com/ddevcap/jellyfin-proxy/backend"
@@ -68,7 +67,7 @@ func (h *MediaHandler) GetItem(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"Id":             itemID,
 			"Name":           mergedDisplayName(collectionType),
-			"ServerId":       strings.ReplaceAll(h.cfg.ServerID, "-", ""),
+			"ServerId":       dashlessID(h.cfg.ServerID),
 			"Type":           "CollectionFolder",
 			"CollectionType": collectionType,
 			"IsFolder":       true,
@@ -280,7 +279,7 @@ func (h *MediaHandler) GetUserItem(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"Id":             itemID,
 			"Name":           mergedDisplayName(collectionType),
-			"ServerId":       strings.ReplaceAll(h.cfg.ServerID, "-", ""),
+			"ServerId":       dashlessID(h.cfg.ServerID),
 			"Type":           "CollectionFolder",
 			"CollectionType": collectionType,
 			"IsFolder":       true,

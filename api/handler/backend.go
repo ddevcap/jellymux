@@ -38,22 +38,22 @@ func NewBackendHandler(db *ent.Client) *BackendHandler {
 // backendResponse is the outward representation of a backend server.
 // token is intentionally omitted — it is write-only.
 type backendResponse struct {
-	ID               uuid.UUID `json:"id"`
-	Name             string    `json:"name"`
-	URL              string    `json:"url"`
-	JellyfinServerID string    `json:"jellyfin_server_id"`
-	Enabled          bool      `json:"enabled"`
-	CreatedAt        time.Time `json:"created_at"`
+	ID         uuid.UUID `json:"id"`
+	Name       string    `json:"name"`
+	URL        string    `json:"url"`
+	ExternalID string    `json:"external_id"`
+	Enabled    bool      `json:"enabled"`
+	CreatedAt  time.Time `json:"created_at"`
 }
 
 func toBackendResponse(b *ent.Backend) backendResponse {
 	return backendResponse{
-		ID:               b.ID,
-		Name:             b.Name,
-		URL:              b.URL,
-		JellyfinServerID: b.JellyfinServerID,
-		Enabled:          b.Enabled,
-		CreatedAt:        b.CreatedAt,
+		ID:         b.ID,
+		Name:       b.Name,
+		URL:        b.URL,
+		ExternalID: b.ExternalID,
+		Enabled:    b.Enabled,
+		CreatedAt:  b.CreatedAt,
 	}
 }
 
@@ -134,11 +134,11 @@ func (h *BackendHandler) CreateBackend(c *gin.Context) {
 	b, err := h.db.Backend.Create().
 		SetName(req.Name).
 		SetURL(req.URL).
-		SetJellyfinServerID(infoResult.ID).
+		SetExternalID(infoResult.ID).
 		Save(c.Request.Context())
 	if err != nil {
 		if ent.IsConstraintError(err) {
-			c.JSON(http.StatusConflict, gin.H{"error": "jellyfin_server_id already registered"})
+			c.JSON(http.StatusConflict, gin.H{"error": "external_id already registered"})
 			return
 		}
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to create backend"})
@@ -187,7 +187,7 @@ func (h *BackendHandler) GetBackend(c *gin.Context) {
 }
 
 // updateBackendRequest uses pointer fields for partial updates.
-// jellyfin_server_id is not updatable — changing it would invalidate all
+// external_id is not updatable — changing it would invalidate all
 // proxy-scoped item IDs already cached by clients.
 type updateBackendRequest struct {
 	Name    *string `json:"name"    binding:"omitempty,min=1"`

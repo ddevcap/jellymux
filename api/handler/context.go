@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 )
 
-// userFromCtx extracts the authenticated proxy user from the gin context.
 func userFromCtx(c *gin.Context) *ent.User {
 	u, _ := c.Get(middleware.ContextKeyUser)
 	user, _ := u.(*ent.User)
@@ -30,11 +29,14 @@ func nilIfEmpty(s string) *string {
 	return &s
 }
 
-// jellyfinID converts a UUID to the dashless hex format that Jellyfin uses
-// in API responses (e.g. "3c1e242c0e3f4c29a1350f70604586c7").
-// The Jellyfin SDK deserializers expect this format.
-func jellyfinID(id uuid.UUID) string {
+// dashlessUUID returns a 32-char hex ID (the format Jellyfin SDKs expect).
+func dashlessUUID(id uuid.UUID) string {
 	return strings.ReplaceAll(id.String(), "-", "")
+}
+
+// dashlessID strips dashes from a string UUID (e.g. cfg.ServerID).
+func dashlessID(s string) string {
+	return strings.ReplaceAll(s, "-", "")
 }
 
 // shouldDirectStream returns true when streaming requests should be redirected

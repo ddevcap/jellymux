@@ -57,16 +57,16 @@ func (_u *BackendUpdate) SetNillableURL(v *string) *BackendUpdate {
 	return _u
 }
 
-// SetJellyfinServerID sets the "jellyfin_server_id" field.
-func (_u *BackendUpdate) SetJellyfinServerID(v string) *BackendUpdate {
-	_u.mutation.SetJellyfinServerID(v)
+// SetExternalID sets the "external_id" field.
+func (_u *BackendUpdate) SetExternalID(v string) *BackendUpdate {
+	_u.mutation.SetExternalID(v)
 	return _u
 }
 
-// SetNillableJellyfinServerID sets the "jellyfin_server_id" field if the given value is not nil.
-func (_u *BackendUpdate) SetNillableJellyfinServerID(v *string) *BackendUpdate {
+// SetNillableExternalID sets the "external_id" field if the given value is not nil.
+func (_u *BackendUpdate) SetNillableExternalID(v *string) *BackendUpdate {
 	if v != nil {
-		_u.SetJellyfinServerID(*v)
+		_u.SetExternalID(*v)
 	}
 	return _u
 }
@@ -165,9 +165,9 @@ func (_u *BackendUpdate) check() error {
 			return &ValidationError{Name: "url", err: fmt.Errorf(`ent: validator failed for field "Backend.url": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.JellyfinServerID(); ok {
-		if err := backend.JellyfinServerIDValidator(v); err != nil {
-			return &ValidationError{Name: "jellyfin_server_id", err: fmt.Errorf(`ent: validator failed for field "Backend.jellyfin_server_id": %w`, err)}
+	if v, ok := _u.mutation.ExternalID(); ok {
+		if err := backend.ExternalIDValidator(v); err != nil {
+			return &ValidationError{Name: "external_id", err: fmt.Errorf(`ent: validator failed for field "Backend.external_id": %w`, err)}
 		}
 	}
 	return nil
@@ -191,8 +191,8 @@ func (_u *BackendUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	if value, ok := _u.mutation.URL(); ok {
 		_spec.SetField(backend.FieldURL, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.JellyfinServerID(); ok {
-		_spec.SetField(backend.FieldJellyfinServerID, field.TypeString, value)
+	if value, ok := _u.mutation.ExternalID(); ok {
+		_spec.SetField(backend.FieldExternalID, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Enabled(); ok {
 		_spec.SetField(backend.FieldEnabled, field.TypeBool, value)
@@ -290,16 +290,16 @@ func (_u *BackendUpdateOne) SetNillableURL(v *string) *BackendUpdateOne {
 	return _u
 }
 
-// SetJellyfinServerID sets the "jellyfin_server_id" field.
-func (_u *BackendUpdateOne) SetJellyfinServerID(v string) *BackendUpdateOne {
-	_u.mutation.SetJellyfinServerID(v)
+// SetExternalID sets the "external_id" field.
+func (_u *BackendUpdateOne) SetExternalID(v string) *BackendUpdateOne {
+	_u.mutation.SetExternalID(v)
 	return _u
 }
 
-// SetNillableJellyfinServerID sets the "jellyfin_server_id" field if the given value is not nil.
-func (_u *BackendUpdateOne) SetNillableJellyfinServerID(v *string) *BackendUpdateOne {
+// SetNillableExternalID sets the "external_id" field if the given value is not nil.
+func (_u *BackendUpdateOne) SetNillableExternalID(v *string) *BackendUpdateOne {
 	if v != nil {
-		_u.SetJellyfinServerID(*v)
+		_u.SetExternalID(*v)
 	}
 	return _u
 }
@@ -411,9 +411,9 @@ func (_u *BackendUpdateOne) check() error {
 			return &ValidationError{Name: "url", err: fmt.Errorf(`ent: validator failed for field "Backend.url": %w`, err)}
 		}
 	}
-	if v, ok := _u.mutation.JellyfinServerID(); ok {
-		if err := backend.JellyfinServerIDValidator(v); err != nil {
-			return &ValidationError{Name: "jellyfin_server_id", err: fmt.Errorf(`ent: validator failed for field "Backend.jellyfin_server_id": %w`, err)}
+	if v, ok := _u.mutation.ExternalID(); ok {
+		if err := backend.ExternalIDValidator(v); err != nil {
+			return &ValidationError{Name: "external_id", err: fmt.Errorf(`ent: validator failed for field "Backend.external_id": %w`, err)}
 		}
 	}
 	return nil
@@ -454,8 +454,8 @@ func (_u *BackendUpdateOne) sqlSave(ctx context.Context) (_node *Backend, err er
 	if value, ok := _u.mutation.URL(); ok {
 		_spec.SetField(backend.FieldURL, field.TypeString, value)
 	}
-	if value, ok := _u.mutation.JellyfinServerID(); ok {
-		_spec.SetField(backend.FieldJellyfinServerID, field.TypeString, value)
+	if value, ok := _u.mutation.ExternalID(); ok {
+		_spec.SetField(backend.FieldExternalID, field.TypeString, value)
 	}
 	if value, ok := _u.mutation.Enabled(); ok {
 		_spec.SetField(backend.FieldEnabled, field.TypeBool, value)

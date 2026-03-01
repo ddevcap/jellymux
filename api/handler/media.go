@@ -169,8 +169,7 @@ var canonicalKeys = map[string]string{
 	"excludelocationtypes":   "ExcludeLocationTypes",
 }
 
-// canonicalKey returns the canonical (properly-cased) Jellyfin query param name
-// for any case variant. Falls back to the original value if not recognised.
+// canonicalKey returns the properly-cased Jellyfin query param name.
 func canonicalKey(k string) string {
 	if v, ok := canonicalKeys[strings.ToLower(k)]; ok {
 		return v
@@ -275,8 +274,7 @@ func redirectStream(c *gin.Context, sc *backend.ServerClient, path string, query
 	c.Redirect(http.StatusFound, sc.DirectURL(path, query))
 }
 
-// rewriteBaseURL replaces every occurrence of backendBaseURL with proxyBaseURL
-// in the response body.
+// rewriteBaseURL replaces backendBaseURL with proxyBaseURL in body.
 func rewriteBaseURL(body []byte, backendBaseURL, proxyBaseURL string) []byte {
 	backendBaseURL = strings.TrimRight(backendBaseURL, "/")
 	proxyBaseURL = strings.TrimRight(proxyBaseURL, "/")
@@ -286,7 +284,7 @@ func rewriteBaseURL(body []byte, backendBaseURL, proxyBaseURL string) []byte {
 	return bytes.ReplaceAll(body, []byte(backendBaseURL), []byte(proxyBaseURL))
 }
 
-// toUUIDForm converts a plain 32-char hex ID to UUID format with dashes.
+// toUUIDForm inserts dashes into a 32-char hex ID.
 func toUUIDForm(id string) string {
 	if len(id) != 32 {
 		return id
@@ -478,12 +476,13 @@ func buildUserPolicy(isAdmin bool, directStream bool, cfg config.Config) gin.H {
 	}
 }
 
-// buildUserObject returns the Jellyfin user response object for the proxy user.
+// buildUserObject returns the Jellyfin user object for a proxy user.
 func buildUserObject(user *ent.User, cfg config.Config) gin.H {
 	obj := gin.H{
 		"Name":                      user.Username,
-		"ServerId":                  strings.ReplaceAll(cfg.ServerID, "-", ""),
-		"Id":                        jellyfinID(user.ID),
+		"ServerName":                cfg.ServerName,
+		"ServerId":                  dashlessID(cfg.ServerID),
+		"Id":                        dashlessUUID(user.ID),
 		"HasPassword":               true,
 		"HasConfiguredPassword":     true,
 		"HasConfiguredEasyPassword": false,
@@ -503,7 +502,9 @@ func buildUserObject(user *ent.User, cfg config.Config) gin.H {
 			"RememberAudioSelections":    true,
 			"RememberSubtitleSelections": true,
 			"EnableNextEpisodeAutoPlay":  true,
-			"CastReceiverId":             "F007D354",
+			// CastReceiverId is the default Chromecast receiver app ID used by
+			// Jellyfin clients. Hardcoded to match the official Jellyfin server.
+			"CastReceiverId": "F007D354",
 		},
 		"Policy": buildUserPolicy(user.IsAdmin, user.DirectStream, cfg),
 	}
@@ -536,8 +537,8 @@ var collectionTypes = map[string]collectionTypeMeta{
 	"livetv":      {itemType: "liveTvchannel", displayName: "Live TV"},
 }
 
-// collectionTypeToItemType maps a Jellyfin CollectionType to the
-// IncludeItemTypes value the backend expects (e.g. "movies" → "movie").
+// collectionTypeToItemType maps CollectionType to IncludeItemTypes
+// (e.g. "movies" → "movie").
 func collectionTypeToItemType(ct string) string {
 	if m, ok := collectionTypes[ct]; ok {
 		return m.itemType

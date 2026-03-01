@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/ddevcap/jellyfin-proxy/config"
@@ -19,11 +20,12 @@ import (
 // Pool manages HTTP connections to all registered backend Jellyfin servers.
 // A single Pool is created at startup and shared across all request handlers.
 type Pool struct {
-	db           *ent.Client
-	cfg          config.Config
-	jsonClient   *http.Client // bounded timeout — for JSON API calls
-	streamClient *http.Client // no total timeout — for binary media streams
-	health       *HealthChecker
+	db            *ent.Client
+	cfg           config.Config
+	proxyServerID string       // dashless 32-char hex proxy server ID, pre-computed once
+	jsonClient    *http.Client // bounded timeout — for JSON API calls
+	streamClient  *http.Client // no total timeout — for binary media streams
+	health        *HealthChecker
 }
 
 func NewPool(db *ent.Client, cfg config.Config) *Pool {
@@ -51,8 +53,9 @@ func NewPool(db *ent.Client, cfg config.Config) *Pool {
 		DisableCompression:    true, // avoid buffering compressed streams
 	}
 	return &Pool{
-		db:  db,
-		cfg: cfg,
+		db:            db,
+		cfg:           cfg,
+		proxyServerID: strings.ReplaceAll(cfg.ServerID, "-", ""),
 		jsonClient: &http.Client{
 			Transport: jsonTransport,
 			Timeout:   10 * time.Second,
@@ -64,19 +67,14 @@ func NewPool(db *ent.Client, cfg config.Config) *Pool {
 	}
 }
 
-// SetHealthChecker attaches a health checker to the pool. Must be called
-// before the pool is used to serve requests.
-func (p *Pool) SetHealthChecker(hc *HealthChecker) {
-	p.health = hc
-}
+// SetHealthChecker attaches a health checker. Must be called before serving.
+func (p *Pool) SetHealthChecker(hc *HealthChecker) { p.health = hc }
 
-// GetHealthChecker returns the attached health checker, or nil if none is set.
-func (p *Pool) GetHealthChecker() *HealthChecker {
-	return p.health
-}
+// GetHealthChecker returns the attached health checker, or nil.
+func (p *Pool) GetHealthChecker() *HealthChecker { return p.health }
 
-// isAvailable returns true if the backend is considered reachable.
-// If no health checker is configured, all backends are assumed available.
+// isAvailable reports whether the backend is reachable.
+// Without a health checker, all backends are assumed available.
 func (p *Pool) isAvailable(backendID string) bool {
 	if p.health == nil {
 		return true
@@ -84,15 +82,14 @@ func (p *Pool) isAvailable(backendID string) bool {
 	return p.health.IsAvailable(backendID)
 }
 
-// ForUser returns a ServerClient configured with the per-user authentication
-// token for the given proxy user on the backend identified by jellyfinServerID.
-// When no mapping or token exists the token will be empty.
-func (p *Pool) ForUser(ctx context.Context, jellyfinServerID string, user *ent.User) (*ServerClient, error) {
+// ForUser returns a ServerClient for the given backend and user.
+// When no user mapping exists, the token and backend user ID will be empty.
+func (p *Pool) ForUser(ctx context.Context, externalID string, user *ent.User) (*ServerClient, error) {
 	b, err := p.db.Backend.Query().
-		Where(entbackend.JellyfinServerID(jellyfinServerID), entbackend.Enabled(true)).
+		Where(entbackend.ExternalID(externalID), entbackend.Enabled(true)).
 		Only(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("backend: server %q not found: %w", jellyfinServerID, err)
+		return nil, fmt.Errorf("backend: server %q not found: %w", externalID, err)
 	}
 
 	var token string
@@ -120,9 +117,8 @@ func (p *Pool) ForUser(ctx context.Context, jellyfinServerID string, user *ent.U
 	}, nil
 }
 
-// AllForUser returns a ServerClient for every backend the user is mapped to
-// (enabled backends only). Used for aggregating results across all backends
-// (e.g. library views).
+// AllForUser returns a ServerClient for every enabled, healthy backend the
+// user is mapped to.
 func (p *Pool) AllForUser(ctx context.Context, user *ent.User) ([]*ServerClient, error) {
 	backendUsers, err := p.db.BackendUser.Query().
 		Where(
@@ -160,15 +156,14 @@ func (p *Pool) AllForUser(ctx context.Context, user *ent.User) ([]*ServerClient,
 	return clients, nil
 }
 
-// ForBackend returns a ServerClient without user-specific credentials.
-// Used for unauthenticated public requests (e.g. images) where no user
-// session is available. The token will be empty.
-func (p *Pool) ForBackend(ctx context.Context, jellyfinServerID string) (*ServerClient, error) {
+// ForBackend returns a ServerClient without user credentials.
+// Used for public requests (images, etc.) where no user session is available.
+func (p *Pool) ForBackend(ctx context.Context, externalID string) (*ServerClient, error) {
 	b, err := p.db.Backend.Query().
-		Where(entbackend.JellyfinServerID(jellyfinServerID), entbackend.Enabled(true)).
+		Where(entbackend.ExternalID(externalID), entbackend.Enabled(true)).
 		Only(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("backend: server %q not found: %w", jellyfinServerID, err)
+		return nil, fmt.Errorf("backend: server %q not found: %w", externalID, err)
 	}
 	return &ServerClient{
 		backend: b,
