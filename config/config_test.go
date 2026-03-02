@@ -46,7 +46,7 @@ var _ = Describe("Load", func() {
 		Expect(cfg.ListenAddr).To(Equal(":8096"))
 		Expect(cfg.ExternalURL).To(Equal("http://localhost:8096"))
 		Expect(cfg.ServerID).To(Equal("jellymux-default-id"))
-		Expect(cfg.ServerName).To(Equal("Jellyfin Proxy"))
+		Expect(cfg.ServerName).To(Equal("Jellymux"))
 		Expect(cfg.SessionTTL).To(Equal(30 * 24 * time.Hour))
 		Expect(cfg.LoginMaxAttempts).To(Equal(10))
 		Expect(cfg.LoginWindow).To(Equal(15 * time.Minute))

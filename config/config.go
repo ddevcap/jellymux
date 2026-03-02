@@ -17,7 +17,7 @@ type Config struct {
 	// ServerID is the UUID the proxy presents as its Jellyfin server ID.
 	ServerID string `env:"SERVER_ID" envDefault:"jellymux-default-id"`
 	// ServerName is the human-readable name reported to clients.
-	ServerName string `env:"SERVER_NAME" envDefault:"Jellyfin Proxy"`
+	ServerName string `env:"SERVER_NAME" envDefault:"Jellymux"`
 	// SessionTTL is how long a session token remains valid after its last activity.
 	// Set to 0 to disable expiry (not recommended for production).
 	SessionTTL time.Duration `env:"SESSION_TTL" envDefault:"720h"`

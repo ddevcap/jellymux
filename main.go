@@ -89,7 +89,7 @@ func main() {
 
 	// Start server in a goroutine so we can listen for shutdown signals.
 	go func() {
-		slog.Info("jellyfin proxy listening", "addr", cfg.ListenAddr)
+		slog.Info("jellymux listening", "addr", cfg.ListenAddr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			slog.Error("server error", "error", err)
 			os.Exit(1)

@@ -97,7 +97,7 @@ environment:
   DATABASE_URL: postgres://jellyfin:jellyfin@postgres:5432/jellymux?sslmode=disable
   EXTERNAL_URL: https://jellyfin.example.com
   SERVER_ID: my-unique-server-id        # any stable string
-  SERVER_NAME: "My Jellyfin Proxy"
+  SERVER_NAME: "My Jellymux"
   INITIAL_ADMIN_PASSWORD: changeme      # only used when the DB is empty
 ```
 
@@ -126,7 +126,7 @@ All configuration is via environment variables.
 | `LISTEN_ADDR` | `:8096` | Address the Go proxy binds to |
 | `EXTERNAL_URL` | `http://localhost:8096` | Publicly reachable URL reported to clients |
 | `SERVER_ID` | `jellymux-default-id` | Server UUID presented to clients |
-| `SERVER_NAME` | `Jellyfin Proxy` | Server name presented to clients |
+| `SERVER_NAME` | `Jellymux` | Server name presented to clients |
 | `SESSION_TTL` | `720h` (30 days) | Session idle timeout (`0` = never expire) |
 | `LOGIN_MAX_ATTEMPTS` | `10` | Failed logins per IP before temporary ban |
 | `LOGIN_WINDOW` | `15m` | Sliding window for counting failed logins |
