@@ -42,7 +42,7 @@ var _ = Describe("Load", func() {
 		cfg, err := config.Load()
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(cfg.DatabaseURL).To(Equal("postgres://jellyfin:jellyfin@localhost:5432/jellymux?sslmode=disable"))
+		Expect(cfg.DatabaseURL).To(Equal("postgres://jellymux:jellymux@localhost:5432/jellymux?sslmode=disable"))
 		Expect(cfg.ListenAddr).To(Equal(":8096"))
 		Expect(cfg.ExternalURL).To(Equal("http://localhost:8096"))
 		Expect(cfg.ServerID).To(Equal("jellymux-default-id"))

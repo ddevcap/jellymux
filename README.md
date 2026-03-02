@@ -94,7 +94,7 @@ The container runs as a non-root user (`jfmux`).
 
 ```yaml
 environment:
-  DATABASE_URL: postgres://jellyfin:jellyfin@postgres:5432/jellymux?sslmode=disable
+  DATABASE_URL: postgres://jellymux:jellymux@postgres:5432/jellymux?sslmode=disable
   EXTERNAL_URL: https://jellyfin.example.com
   SERVER_ID: my-unique-server-id        # any stable string
   SERVER_NAME: "My Jellymux"
@@ -122,7 +122,7 @@ All configuration is via environment variables.
 
 | Variable | Default | Description |
 |---|---|---|
-| `DATABASE_URL` | `postgres://jellyfin:jellyfin@localhost:5432/jellymux?sslmode=disable` | PostgreSQL connection string |
+| `DATABASE_URL` | `postgres://jellymux:jellymux@localhost:5432/jellymux?sslmode=disable` | PostgreSQL connection string |
 | `LISTEN_ADDR` | `:8096` | Address the Go proxy binds to |
 | `EXTERNAL_URL` | `http://localhost:8096` | Publicly reachable URL reported to clients |
 | `SERVER_ID` | `jellymux-default-id` | Server UUID presented to clients |

@@ -9,7 +9,7 @@ import (
 
 type Config struct {
 	// DatabaseURL is the PostgreSQL connection string.
-	DatabaseURL string `env:"DATABASE_URL" envDefault:"postgres://jellyfin:jellyfin@localhost:5432/jellymux?sslmode=disable"`
+	DatabaseURL string `env:"DATABASE_URL" envDefault:"postgres://jellymux:jellymux@localhost:5432/jellymux?sslmode=disable"`
 	// ListenAddr is the address the proxy HTTP server binds to.
 	ListenAddr string `env:"LISTEN_ADDR" envDefault:":8096"`
 	// ExternalURL is the publicly reachable URL for this proxy, reported to clients.

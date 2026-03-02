@@ -8,36 +8,36 @@ services:
     env_file: .env
     environment:
       # Always use the Docker service name — .env uses localhost for local dev outside Docker
-      DATABASE_URL: postgres://jellyfin:jellyfin@postgres:5432/jellymux?sslmode=disable
+      DATABASE_URL: postgres://jellymux:jellymux@postgres:5432/jellymux?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
     networks:
-      - jellyfin-network
+      - jellymux-network
 
   postgres:
     image: postgres:16-alpine
     restart: unless-stopped
-    container_name: jellyfin-postgres
+    container_name: jellymux-postgres
     environment:
       POSTGRES_DB: jellymux
-      POSTGRES_USER: jellyfin
-      POSTGRES_PASSWORD: jellyfin
+      POSTGRES_USER: jellymux
+      POSTGRES_PASSWORD: jellymux
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jellyfin -d jellymux"]
+      test: ["CMD-SHELL", "pg_isready -U jellymux -d jellymux"]
       interval: 5s
       timeout: 5s
       retries: 5
     networks:
-      - jellyfin-network
+      - jellymux-network
 
 volumes:
   postgres_data:
 
 networks:
-  jellyfin-network:
+  jellymux-network:
     driver: bridge
