@@ -1,5 +1,5 @@
 # Caddy listens on the public port and routes:
-#   /web/*   → jellyfin-web static files
+#   /web/*   → jellymux-web static files
 #   /*       → Go proxy (API) on internal port 8097
 #
 # The Go proxy listens on 8097 (LISTEN_ADDR in docker-compose / .env).
@@ -9,7 +9,7 @@
 	# ── Jellyfin Web UI ───────────────────────────────────────────────────
 	# Served from /web/. SPA routing: fall back to index.html for unknown paths.
 	handle /web/* {
-		root * /srv/jellyfin-web
+		root * /srv/jellymux-web
 		# Strip the /web prefix so the files resolve correctly
 		uri strip_prefix /web
 		try_files {path} /index.html

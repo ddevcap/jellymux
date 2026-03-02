@@ -1,14 +1,14 @@
-# ── Stage 1: Fetch pre-built jellyfin-web ─────────────────────────────────────
+# ── Stage 1: Fetch pre-built jellymux-web ─────────────────────────────────────
 # The web UI is built and published as a tarball by the jellymux-web repo's
 # release workflow. Override JELLYFIN_WEB_VERSION at build time to pin a version.
 # Source: https://github.com/ddevcap/jellymux-web (GPL-2.0)
 FROM alpine:3.21 AS web-stage
 
-ARG JELLYFIN_WEB_VERSION=10.11.6-proxy.3
+ARG JELLYFIN_WEB_VERSION=10.11.6-jellymux.3
 
 ADD https://github.com/ddevcap/jellymux-web/releases/download/v${JELLYFIN_WEB_VERSION}/dist.tar.gz /tmp/dist.tar.gz
-RUN mkdir -p /srv/jellyfin-web \
-    && tar -xzf /tmp/dist.tar.gz -C /srv/jellyfin-web \
+RUN mkdir -p /srv/jellymux-web \
+    && tar -xzf /tmp/dist.tar.gz -C /srv/jellymux-web \
     && rm /tmp/dist.tar.gz
 
 # ── Stage 2: Build Go proxy ───────────────────────────────────────────────────
@@ -40,10 +40,10 @@ WORKDIR /app
 COPY --from=builder /app/jellymux ./jellymux
 
 # Jellyfin web dist
-COPY --from=web-stage /srv/jellyfin-web /srv/jellyfin-web
+COPY --from=web-stage /srv/jellymux-web /srv/jellymux-web
 
 # Caddyfile — Caddy listens on :8096 (public port):
-#   /web/*  →  static files from /srv/jellyfin-web
+#   /web/*  →  static files from /srv/jellymux-web
 #   /*      →  reverse proxy to Go proxy on 127.0.0.1:8097
 COPY Caddyfile /etc/caddy/Caddyfile
 
@@ -51,7 +51,7 @@ COPY Caddyfile /etc/caddy/Caddyfile
 COPY supervisord.conf /etc/supervisord.conf
 
 # Ensure the non-root user can write Caddy state and supervisor pid.
-RUN mkdir -p /data /config /tmp && chown -R jfmux:jfmux /data /config /tmp /app /srv/jellyfin-web
+RUN mkdir -p /data /config /tmp && chown -R jfmux:jfmux /data /config /tmp /app /srv/jellymux-web
 
 EXPOSE 8096
 
