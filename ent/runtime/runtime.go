@@ -2,7 +2,7 @@
 
 package runtime
 
-// The schema-stitching logic is generated in github.com/ddevcap/jellyfin-proxy/ent/runtime.go
+// The schema-stitching logic is generated in github.com/ddevcap/jellymux/ent/runtime.go
 
 const (
 	Version = "v0.14.5"                                         // Version of ent codegen.

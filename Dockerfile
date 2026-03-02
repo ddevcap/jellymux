@@ -1,12 +1,12 @@
 # ── Stage 1: Fetch pre-built jellyfin-web ─────────────────────────────────────
-# The web UI is built and published as a tarball by the jellyfin-proxy-web repo's
+# The web UI is built and published as a tarball by the jellymux-web repo's
 # release workflow. Override JELLYFIN_WEB_VERSION at build time to pin a version.
-# Source: https://github.com/ddevcap/jellyfin-proxy-web (GPL-2.0)
+# Source: https://github.com/ddevcap/jellymux-web (GPL-2.0)
 FROM alpine:3.21 AS web-stage
 
 ARG JELLYFIN_WEB_VERSION=10.11.6-proxy.3
 
-ADD https://github.com/ddevcap/jellyfin-proxy-web/releases/download/v${JELLYFIN_WEB_VERSION}/dist.tar.gz /tmp/dist.tar.gz
+ADD https://github.com/ddevcap/jellymux-web/releases/download/v${JELLYFIN_WEB_VERSION}/dist.tar.gz /tmp/dist.tar.gz
 RUN mkdir -p /srv/jellyfin-web \
     && tar -xzf /tmp/dist.tar.gz -C /srv/jellyfin-web \
     && rm /tmp/dist.tar.gz
@@ -22,7 +22,7 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o jellyfin-proxy .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o jellymux .
 
 # ── Stage 3: Runtime ──────────────────────────────────────────────────────────
 # Use Caddy as the base — it gives us a production-grade reverse proxy and
@@ -32,12 +32,12 @@ FROM caddy:2-alpine
 RUN apk add --no-cache supervisor ca-certificates
 
 # Create a non-root user for running the services.
-RUN addgroup -S jfproxy && adduser -S jfproxy -G jfproxy
+RUN addgroup -S jfmux && adduser -S jfmux -G jfmux
 
 WORKDIR /app
 
 # Go proxy binary
-COPY --from=builder /app/jellyfin-proxy ./jellyfin-proxy
+COPY --from=builder /app/jellymux ./jellymux
 
 # Jellyfin web dist
 COPY --from=web-stage /srv/jellyfin-web /srv/jellyfin-web
@@ -51,10 +51,10 @@ COPY Caddyfile /etc/caddy/Caddyfile
 COPY supervisord.conf /etc/supervisord.conf
 
 # Ensure the non-root user can write Caddy state and supervisor pid.
-RUN mkdir -p /data /config /tmp && chown -R jfproxy:jfproxy /data /config /tmp /app /srv/jellyfin-web
+RUN mkdir -p /data /config /tmp && chown -R jfmux:jfmux /data /config /tmp /app /srv/jellyfin-web
 
 EXPOSE 8096
 
-USER jfproxy
+USER jfmux
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisord.conf"]

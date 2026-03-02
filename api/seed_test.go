@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/ddevcap/jellyfin-proxy/api"
-	"github.com/ddevcap/jellyfin-proxy/config"
+	"github.com/ddevcap/jellymux/api"
+	"github.com/ddevcap/jellymux/config"
 )
 
 var _ = Describe("SeedInitialAdmin", func() {

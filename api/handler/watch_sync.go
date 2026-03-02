@@ -8,7 +8,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/ddevcap/jellyfin-proxy/backend"
+	"github.com/ddevcap/jellymux/backend"
 )
 
 // syncWatchStateTimeout is the per-backend deadline for cross-backend

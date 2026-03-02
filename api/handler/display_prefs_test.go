@@ -10,8 +10,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/ddevcap/jellyfin-proxy/api/handler"
-	"github.com/ddevcap/jellyfin-proxy/config"
+	"github.com/ddevcap/jellymux/api/handler"
+	"github.com/ddevcap/jellymux/config"
 )
 
 // serveSystem wires up a single-route gin router and fires the request.

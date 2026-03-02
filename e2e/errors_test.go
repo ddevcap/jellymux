@@ -8,7 +8,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/ddevcap/jellyfin-proxy/idtrans"
+	"github.com/ddevcap/jellymux/idtrans"
 )
 
 var _ = Describe("Error handling & edge cases", func() {

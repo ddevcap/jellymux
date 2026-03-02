@@ -6,10 +6,10 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/ddevcap/jellyfin-proxy/api/handler"
-	"github.com/ddevcap/jellyfin-proxy/config"
-	"github.com/ddevcap/jellyfin-proxy/ent"
-	"github.com/ddevcap/jellyfin-proxy/idtrans"
+	"github.com/ddevcap/jellymux/api/handler"
+	"github.com/ddevcap/jellymux/config"
+	"github.com/ddevcap/jellymux/ent"
+	"github.com/ddevcap/jellymux/idtrans"
 )
 
 var _ = Describe("Context helpers", func() {
@@ -192,4 +192,3 @@ var _ = Describe("Context helpers", func() {
 		})
 	})
 })
-

@@ -5,11 +5,11 @@ package ent
 import (
 	"time"
 
-	"github.com/ddevcap/jellyfin-proxy/ent/backend"
-	"github.com/ddevcap/jellyfin-proxy/ent/backenduser"
-	"github.com/ddevcap/jellyfin-proxy/ent/schema"
-	"github.com/ddevcap/jellyfin-proxy/ent/session"
-	"github.com/ddevcap/jellyfin-proxy/ent/user"
+	"github.com/ddevcap/jellymux/ent/backend"
+	"github.com/ddevcap/jellymux/ent/backenduser"
+	"github.com/ddevcap/jellymux/ent/schema"
+	"github.com/ddevcap/jellymux/ent/session"
+	"github.com/ddevcap/jellymux/ent/user"
 	"github.com/google/uuid"
 )
 

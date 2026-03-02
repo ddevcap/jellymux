@@ -1,18 +1,18 @@
-jellyfin-proxy
-Copyright (C) 2025-present the jellyfin-proxy contributors
+jellymux
+Copyright (C) 2025-present the jellymux contributors
 
 This project incorporates the following third-party software:
 
 ────────────────────────────────────────────────────────────────────────────────
-jellyfin-proxy-web (fork of jellyfin-web)
+jellymux-web (fork of jellyfin-web)
 Copyright (C) 2019-present Jellyfin Contributors
 License: GNU General Public License v2.0 (GPL-2.0-only)
 Upstream source:  https://github.com/jellyfin/jellyfin-web
-Fork source:      https://github.com/ddevcap/jellyfin-proxy-web
+Fork source:      https://github.com/ddevcap/jellymux-web
 ────────────────────────────────────────────────────────────────────────────────
 
 The frontend is built from source at Docker image build time from the
-jellyfin-proxy-web fork (proxy branch). The compiled assets are served by
+jellymux-web fork (proxy branch). The compiled assets are served by
 this proxy but are not vendored into this repository's source tree.
 
 The full GPL-2.0 license text is available at:

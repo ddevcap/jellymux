@@ -11,7 +11,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/ddevcap/jellyfin-proxy/api/handler"
+	"github.com/ddevcap/jellymux/api/handler"
 )
 
 var _ = Describe("WSHub", func() {
@@ -38,7 +38,7 @@ var _ = Describe("WSHub", func() {
 			conn, resp, err := websocket.DefaultDialer.Dial(wsURL, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(resp.StatusCode).To(Equal(http.StatusSwitchingProtocols))
-			defer conn.Close()
+			defer func() { _ = conn.Close() }()
 
 			// Should receive a KeepAlive message
 			_, msg, err := conn.ReadMessage()
@@ -72,4 +72,3 @@ var _ = Describe("WSHub", func() {
 		})
 	})
 })
-

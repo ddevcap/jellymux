@@ -11,9 +11,9 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/ddevcap/jellyfin-proxy/ent/predicate"
-	"github.com/ddevcap/jellyfin-proxy/ent/session"
-	"github.com/ddevcap/jellyfin-proxy/ent/user"
+	"github.com/ddevcap/jellymux/ent/predicate"
+	"github.com/ddevcap/jellymux/ent/session"
+	"github.com/ddevcap/jellymux/ent/user"
 	"github.com/google/uuid"
 )
 

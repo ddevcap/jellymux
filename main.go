@@ -11,14 +11,14 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect"
-	"github.com/ddevcap/jellyfin-proxy/api"
-	"github.com/ddevcap/jellyfin-proxy/api/handler"
-	"github.com/ddevcap/jellyfin-proxy/backend"
-	"github.com/ddevcap/jellyfin-proxy/config"
-	"github.com/ddevcap/jellyfin-proxy/ent/migrate"
-	"github.com/ddevcap/jellyfin-proxy/idtrans"
+	"github.com/ddevcap/jellymux/api"
+	"github.com/ddevcap/jellymux/api/handler"
+	"github.com/ddevcap/jellymux/backend"
+	"github.com/ddevcap/jellymux/config"
+	"github.com/ddevcap/jellymux/ent/migrate"
+	"github.com/ddevcap/jellymux/idtrans"
 
-	"github.com/ddevcap/jellyfin-proxy/ent"
+	"github.com/ddevcap/jellymux/ent"
 	_ "github.com/lib/pq"
 )
 

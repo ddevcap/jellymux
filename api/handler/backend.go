@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ddevcap/jellyfin-proxy/ent"
-	entbackend "github.com/ddevcap/jellyfin-proxy/ent/backend"
-	entbackenduser "github.com/ddevcap/jellyfin-proxy/ent/backenduser"
-	entuser "github.com/ddevcap/jellyfin-proxy/ent/user"
+	"github.com/ddevcap/jellymux/ent"
+	entbackend "github.com/ddevcap/jellymux/ent/backend"
+	entbackenduser "github.com/ddevcap/jellymux/ent/backenduser"
+	entuser "github.com/ddevcap/jellymux/ent/user"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 )
@@ -488,7 +488,7 @@ func (h *BackendHandler) LoginToBackend(c *gin.Context) {
 	}
 	backendReq.Header.Set("Content-Type", "application/json")
 	backendReq.Header.Set("X-Emby-Authorization",
-		`MediaBrowser Client="jellyfin-proxy", Device="proxy", DeviceId="jellyfin-proxy-admin", Version="1.0"`)
+		`MediaBrowser Client="jellymux", Device="proxy", DeviceId="jellymux-admin", Version="1.0"`)
 
 	client := h.httpClient
 	resp, err := client.Do(backendReq)

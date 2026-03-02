@@ -11,8 +11,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/ddevcap/jellyfin-proxy/api/handler"
-	"github.com/ddevcap/jellyfin-proxy/config"
+	"github.com/ddevcap/jellymux/api/handler"
+	"github.com/ddevcap/jellymux/config"
 )
 
 var _ = Describe("SystemHandler", func() {

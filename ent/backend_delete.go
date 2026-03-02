@@ -8,8 +8,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/ddevcap/jellyfin-proxy/ent/backend"
-	"github.com/ddevcap/jellyfin-proxy/ent/predicate"
+	"github.com/ddevcap/jellymux/ent/backend"
+	"github.com/ddevcap/jellymux/ent/predicate"
 )
 
 // BackendDelete is the builder for deleting a Backend entity.

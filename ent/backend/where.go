@@ -7,7 +7,7 @@ import (
 
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/ddevcap/jellyfin-proxy/ent/predicate"
+	"github.com/ddevcap/jellymux/ent/predicate"
 	"github.com/google/uuid"
 )
 

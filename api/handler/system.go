@@ -6,9 +6,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/ddevcap/jellyfin-proxy/backend"
-	"github.com/ddevcap/jellyfin-proxy/config"
-	"github.com/ddevcap/jellyfin-proxy/ent"
+	"github.com/ddevcap/jellymux/backend"
+	"github.com/ddevcap/jellymux/config"
+	"github.com/ddevcap/jellymux/ent"
 	"github.com/gin-gonic/gin"
 )
 

@@ -8,8 +8,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/ddevcap/jellyfin-proxy/ent"
-	"github.com/ddevcap/jellyfin-proxy/ent/enttest"
+	"github.com/ddevcap/jellymux/ent"
+	"github.com/ddevcap/jellymux/ent/enttest"
 	_ "modernc.org/sqlite"
 )
 

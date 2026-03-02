@@ -9,10 +9,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/ddevcap/jellyfin-proxy/api/handler"
-	"github.com/ddevcap/jellyfin-proxy/api/middleware"
-	"github.com/ddevcap/jellyfin-proxy/config"
-	"github.com/ddevcap/jellyfin-proxy/ent"
+	"github.com/ddevcap/jellymux/api/handler"
+	"github.com/ddevcap/jellymux/api/middleware"
+	"github.com/ddevcap/jellymux/config"
+	"github.com/ddevcap/jellymux/ent"
 )
 
 var _ = Describe("AuthHandler", func() {

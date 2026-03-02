@@ -6,7 +6,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ddevcap/jellyfin-proxy/ent"
+	"github.com/ddevcap/jellymux/ent"
 )
 
 // The BackendFunc type is an adapter to allow the use of ordinary

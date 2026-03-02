@@ -10,8 +10,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/ddevcap/jellyfin-proxy/backend"
-	"github.com/ddevcap/jellyfin-proxy/config"
+	"github.com/ddevcap/jellymux/backend"
+	"github.com/ddevcap/jellymux/config"
 )
 
 var _ = Describe("HealthChecker", func() {

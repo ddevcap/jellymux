@@ -1,4 +1,4 @@
-module github.com/ddevcap/jellyfin-proxy
+module github.com/ddevcap/jellymux
 
 go 1.24.0
 

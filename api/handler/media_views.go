@@ -10,10 +10,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/ddevcap/jellyfin-proxy/backend"
-	"github.com/ddevcap/jellyfin-proxy/ent"
-	entuser "github.com/ddevcap/jellyfin-proxy/ent/user"
-	"github.com/ddevcap/jellyfin-proxy/idtrans"
+	"github.com/ddevcap/jellymux/backend"
+	"github.com/ddevcap/jellymux/ent"
+	entuser "github.com/ddevcap/jellymux/ent/user"
+	"github.com/ddevcap/jellymux/idtrans"
 	"github.com/gin-gonic/gin"
 	"github.com/jellydator/ttlcache/v3"
 )

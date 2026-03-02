@@ -1,8 +1,8 @@
-# jellyfin-proxy
+# jellymux
 
-[![CI](https://github.com/ddevcap/jellyfin-proxy/actions/workflows/ci.yml/badge.svg)](https://github.com/ddevcap/jellyfin-proxy/actions/workflows/ci.yml)
-[![E2E](https://github.com/ddevcap/jellyfin-proxy/actions/workflows/e2e.yml/badge.svg)](https://github.com/ddevcap/jellyfin-proxy/actions/workflows/e2e.yml)
-[![codecov](https://codecov.io/gh/ddevcap/jellyfin-proxy/branch/main/graph/badge.svg?token=WJ76T7CQHV)](https://codecov.io/gh/ddevcap/jellyfin-proxy)
+[![CI](https://github.com/ddevcap/jellymux/actions/workflows/ci.yml/badge.svg)](https://github.com/ddevcap/jellymux/actions/workflows/ci.yml)
+[![E2E](https://github.com/ddevcap/jellymux/actions/workflows/e2e.yml/badge.svg)](https://github.com/ddevcap/jellymux/actions/workflows/e2e.yml)
+[![codecov](https://codecov.io/gh/ddevcap/jellymux/branch/main/graph/badge.svg?token=WJ76T7CQHV)](https://codecov.io/gh/ddevcap/jellymux)
 
 A lightweight reverse proxy that sits in front of one or more Jellyfin servers
 and presents them to clients as a single unified server.
@@ -18,7 +18,7 @@ instances (e.g. one per location, one per media type), every client must be
 configured separately for each server and users must maintain separate accounts
 on each.
 
-`jellyfin-proxy` solves this by:
+`jellymux` solves this by:
 
 - Exposing a **single Jellyfin-compatible endpoint** that any standard Jellyfin
   client connects to without modification.
@@ -48,7 +48,7 @@ on each.
 Jellyfin client
       │
       ▼
- jellyfin-proxy  (Go + Gin, :8097 internally)
+ jellymux  (Go + Gin, :8097 internally)
       │  served via Caddy (:8096 externally)
       │  ┌──────────────────────────────────┐
       ├─▶│  Backend A  (Movies)             │──┐
@@ -66,10 +66,10 @@ and rewrites item IDs so every item is globally unique. Libraries with the same
 type (e.g. Movies on Backend A + Movies on Backend B) are collapsed into a
 single virtual library — clients see one "Movies" folder instead of two.
 
-The Dockerfile bundles the Go binary, a [custom fork of the Jellyfin Web UI](https://github.com/ddevcap/jellyfin-proxy-web)
+The Dockerfile bundles the Go binary, a [custom fork of the Jellyfin Web UI](https://github.com/ddevcap/jellymux-web)
 with proxy-specific patches, and Caddy into a single container managed by supervisord. Caddy serves
 the web UI as static files and reverse-proxies all API traffic to the Go proxy.
-The container runs as a non-root user (`jfproxy`).
+The container runs as a non-root user (`jfmux`).
 
 **Background services:**
 
@@ -94,7 +94,7 @@ The container runs as a non-root user (`jfproxy`).
 
 ```yaml
 environment:
-  DATABASE_URL: postgres://jellyfin:jellyfin@postgres:5432/jellyfin_proxy?sslmode=disable
+  DATABASE_URL: postgres://jellyfin:jellyfin@postgres:5432/jellymux?sslmode=disable
   EXTERNAL_URL: https://jellyfin.example.com
   SERVER_ID: my-unique-server-id        # any stable string
   SERVER_NAME: "My Jellyfin Proxy"
@@ -122,10 +122,10 @@ All configuration is via environment variables.
 
 | Variable | Default | Description |
 |---|---|---|
-| `DATABASE_URL` | `postgres://jellyfin:jellyfin@localhost:5432/jellyfin_proxy?sslmode=disable` | PostgreSQL connection string |
+| `DATABASE_URL` | `postgres://jellyfin:jellyfin@localhost:5432/jellymux?sslmode=disable` | PostgreSQL connection string |
 | `LISTEN_ADDR` | `:8096` | Address the Go proxy binds to |
 | `EXTERNAL_URL` | `http://localhost:8096` | Publicly reachable URL reported to clients |
-| `SERVER_ID` | `jellyfin-proxy-default-id` | Server UUID presented to clients |
+| `SERVER_ID` | `jellymux-default-id` | Server UUID presented to clients |
 | `SERVER_NAME` | `Jellyfin Proxy` | Server name presented to clients |
 | `SESSION_TTL` | `720h` (30 days) | Session idle timeout (`0` = never expire) |
 | `LOGIN_MAX_ATTEMPTS` | `10` | Failed logins per IP before temporary ban |
@@ -346,8 +346,8 @@ work so we can discuss the approach first.
 ### Local setup
 
 ```bash
-git clone https://github.com/ddevcap/jellyfin-proxy.git
-cd jellyfin-proxy
+git clone https://github.com/ddevcap/jellymux.git
+cd jellymux
 
 # Install the pre-commit hook (lint + test runs automatically on every commit).
 lefthook install

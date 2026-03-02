@@ -3,7 +3,7 @@ package middleware
 import (
 	"net/http"
 
-	"github.com/ddevcap/jellyfin-proxy/ent"
+	"github.com/ddevcap/jellymux/ent"
 	"github.com/gin-gonic/gin"
 )
 

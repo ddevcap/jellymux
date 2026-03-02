@@ -9,13 +9,13 @@ import (
 
 type Config struct {
 	// DatabaseURL is the PostgreSQL connection string.
-	DatabaseURL string `env:"DATABASE_URL" envDefault:"postgres://jellyfin:jellyfin@localhost:5432/jellyfin_proxy?sslmode=disable"`
+	DatabaseURL string `env:"DATABASE_URL" envDefault:"postgres://jellyfin:jellyfin@localhost:5432/jellymux?sslmode=disable"`
 	// ListenAddr is the address the proxy HTTP server binds to.
 	ListenAddr string `env:"LISTEN_ADDR" envDefault:":8096"`
 	// ExternalURL is the publicly reachable URL for this proxy, reported to clients.
 	ExternalURL string `env:"EXTERNAL_URL" envDefault:"http://localhost:8096"`
 	// ServerID is the UUID the proxy presents as its Jellyfin server ID.
-	ServerID string `env:"SERVER_ID" envDefault:"jellyfin-proxy-default-id"`
+	ServerID string `env:"SERVER_ID" envDefault:"jellymux-default-id"`
 	// ServerName is the human-readable name reported to clients.
 	ServerName string `env:"SERVER_NAME" envDefault:"Jellyfin Proxy"`
 	// SessionTTL is how long a session token remains valid after its last activity.

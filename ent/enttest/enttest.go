@@ -5,12 +5,12 @@ package enttest
 import (
 	"context"
 
-	"github.com/ddevcap/jellyfin-proxy/ent"
+	"github.com/ddevcap/jellymux/ent"
 	// required by schema hooks.
-	_ "github.com/ddevcap/jellyfin-proxy/ent/runtime"
+	_ "github.com/ddevcap/jellymux/ent/runtime"
 
 	"entgo.io/ent/dialect/sql/schema"
-	"github.com/ddevcap/jellyfin-proxy/ent/migrate"
+	"github.com/ddevcap/jellymux/ent/migrate"
 )
 
 type (

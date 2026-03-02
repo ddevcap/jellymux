@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/ddevcap/jellyfin-proxy/ent"
-	entbackenduser "github.com/ddevcap/jellyfin-proxy/ent/backenduser"
-	entuser "github.com/ddevcap/jellyfin-proxy/ent/user"
+	"github.com/ddevcap/jellymux/ent"
+	entbackenduser "github.com/ddevcap/jellymux/ent/backenduser"
+	entuser "github.com/ddevcap/jellymux/ent/user"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"

@@ -1,14 +1,14 @@
 services:
-  jellyfin-proxy:
+  jellymux:
     build: .
     restart: unless-stopped
-    container_name: jellyfin-proxy
+    container_name: jellymux
     ports:
       - "8096:8096"
     env_file: .env
     environment:
       # Always use the Docker service name — .env uses localhost for local dev outside Docker
-      DATABASE_URL: postgres://jellyfin:jellyfin@postgres:5432/jellyfin_proxy?sslmode=disable
+      DATABASE_URL: postgres://jellyfin:jellyfin@postgres:5432/jellymux?sslmode=disable
     depends_on:
       postgres:
         condition: service_healthy
@@ -20,7 +20,7 @@ services:
     restart: unless-stopped
     container_name: jellyfin-postgres
     environment:
-      POSTGRES_DB: jellyfin_proxy
+      POSTGRES_DB: jellymux
       POSTGRES_USER: jellyfin
       POSTGRES_PASSWORD: jellyfin
     ports:
@@ -28,7 +28,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U jellyfin -d jellyfin_proxy"]
+      test: ["CMD-SHELL", "pg_isready -U jellyfin -d jellymux"]
       interval: 5s
       timeout: 5s
       retries: 5

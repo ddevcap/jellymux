@@ -9,7 +9,7 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/ddevcap/jellyfin-proxy/ent/backend"
+	"github.com/ddevcap/jellymux/ent/backend"
 	"github.com/google/uuid"
 )
 

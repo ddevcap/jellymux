@@ -12,10 +12,10 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/ddevcap/jellyfin-proxy/ent/backend"
-	"github.com/ddevcap/jellyfin-proxy/ent/backenduser"
-	"github.com/ddevcap/jellyfin-proxy/ent/session"
-	"github.com/ddevcap/jellyfin-proxy/ent/user"
+	"github.com/ddevcap/jellymux/ent/backend"
+	"github.com/ddevcap/jellymux/ent/backenduser"
+	"github.com/ddevcap/jellymux/ent/session"
+	"github.com/ddevcap/jellymux/ent/user"
 )
 
 // ent aliases to avoid import conflicts in user's code.

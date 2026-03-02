@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/ddevcap/jellyfin-proxy/config"
+	"github.com/ddevcap/jellymux/config"
 	"github.com/gin-gonic/gin"
 	"github.com/jellydator/ttlcache/v3"
 )

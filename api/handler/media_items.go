@@ -9,8 +9,8 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/ddevcap/jellyfin-proxy/backend"
-	"github.com/ddevcap/jellyfin-proxy/idtrans"
+	"github.com/ddevcap/jellymux/backend"
+	"github.com/ddevcap/jellymux/idtrans"
 	"github.com/gin-gonic/gin"
 )
 

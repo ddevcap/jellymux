@@ -7,8 +7,8 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/ddevcap/jellyfin-proxy/api"
-	"github.com/ddevcap/jellyfin-proxy/config"
+	"github.com/ddevcap/jellymux/api"
+	"github.com/ddevcap/jellymux/config"
 )
 
 var _ = Describe("SessionCleaner", func() {
@@ -82,4 +82,3 @@ var _ = Describe("SessionCleaner", func() {
 		Expect(count).To(Equal(1))
 	})
 })
-

@@ -14,11 +14,11 @@ import (
 
 	"github.com/gin-gonic/gin"
 
-	"github.com/ddevcap/jellyfin-proxy/api/handler"
-	"github.com/ddevcap/jellyfin-proxy/api/middleware"
-	"github.com/ddevcap/jellyfin-proxy/backend"
-	"github.com/ddevcap/jellyfin-proxy/config"
-	"github.com/ddevcap/jellyfin-proxy/ent"
+	"github.com/ddevcap/jellymux/api/handler"
+	"github.com/ddevcap/jellymux/api/middleware"
+	"github.com/ddevcap/jellymux/backend"
+	"github.com/ddevcap/jellymux/config"
+	"github.com/ddevcap/jellymux/ent"
 )
 
 // minimalPNG returns the bytes of a 1×1 red PNG — the smallest valid image.

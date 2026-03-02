@@ -9,17 +9,17 @@ import (
 	"log"
 	"reflect"
 
-	"github.com/ddevcap/jellyfin-proxy/ent/migrate"
+	"github.com/ddevcap/jellymux/ent/migrate"
 	"github.com/google/uuid"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
-	"github.com/ddevcap/jellyfin-proxy/ent/backend"
-	"github.com/ddevcap/jellyfin-proxy/ent/backenduser"
-	"github.com/ddevcap/jellyfin-proxy/ent/session"
-	"github.com/ddevcap/jellyfin-proxy/ent/user"
+	"github.com/ddevcap/jellymux/ent/backend"
+	"github.com/ddevcap/jellymux/ent/backenduser"
+	"github.com/ddevcap/jellymux/ent/session"
+	"github.com/ddevcap/jellymux/ent/user"
 )
 
 // Client is the client that holds all ent builders.

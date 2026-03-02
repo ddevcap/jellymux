@@ -14,9 +14,9 @@ import (
 	. "github.com/onsi/gomega"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/ddevcap/jellyfin-proxy/ent"
-	"github.com/ddevcap/jellyfin-proxy/ent/enttest"
-	"github.com/ddevcap/jellyfin-proxy/idtrans"
+	"github.com/ddevcap/jellymux/ent"
+	"github.com/ddevcap/jellymux/ent/enttest"
+	"github.com/ddevcap/jellymux/idtrans"
 	_ "modernc.org/sqlite"
 )
 

@@ -49,7 +49,7 @@ linters-settings:
 formatters-settings:
   goimports:
     local-prefixes:
-      - github.com/ddevcap/jellyfin-proxy
+      - github.com/ddevcap/jellymux
 
 issues:
   max-issues-per-linter: 0

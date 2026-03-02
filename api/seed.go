@@ -4,9 +4,9 @@ import (
 	"context"
 	"log/slog"
 
-	"github.com/ddevcap/jellyfin-proxy/api/handler"
-	"github.com/ddevcap/jellyfin-proxy/config"
-	"github.com/ddevcap/jellyfin-proxy/ent"
+	"github.com/ddevcap/jellymux/api/handler"
+	"github.com/ddevcap/jellymux/config"
+	"github.com/ddevcap/jellymux/ent"
 	"golang.org/x/crypto/bcrypt"
 )
 

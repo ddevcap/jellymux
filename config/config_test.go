@@ -7,7 +7,7 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
-	"github.com/ddevcap/jellyfin-proxy/config"
+	"github.com/ddevcap/jellymux/config"
 )
 
 var _ = Describe("Load", func() {
@@ -42,10 +42,10 @@ var _ = Describe("Load", func() {
 		cfg, err := config.Load()
 		Expect(err).NotTo(HaveOccurred())
 
-		Expect(cfg.DatabaseURL).To(Equal("postgres://jellyfin:jellyfin@localhost:5432/jellyfin_proxy?sslmode=disable"))
+		Expect(cfg.DatabaseURL).To(Equal("postgres://jellyfin:jellyfin@localhost:5432/jellymux?sslmode=disable"))
 		Expect(cfg.ListenAddr).To(Equal(":8096"))
 		Expect(cfg.ExternalURL).To(Equal("http://localhost:8096"))
-		Expect(cfg.ServerID).To(Equal("jellyfin-proxy-default-id"))
+		Expect(cfg.ServerID).To(Equal("jellymux-default-id"))
 		Expect(cfg.ServerName).To(Equal("Jellyfin Proxy"))
 		Expect(cfg.SessionTTL).To(Equal(30 * 24 * time.Hour))
 		Expect(cfg.LoginMaxAttempts).To(Equal(10))

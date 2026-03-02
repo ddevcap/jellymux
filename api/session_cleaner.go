@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/ddevcap/jellyfin-proxy/config"
-	"github.com/ddevcap/jellyfin-proxy/ent"
-	entsession "github.com/ddevcap/jellyfin-proxy/ent/session"
+	"github.com/ddevcap/jellymux/config"
+	"github.com/ddevcap/jellymux/ent"
+	entsession "github.com/ddevcap/jellymux/ent/session"
 )
 
 // SessionCleaner periodically deletes expired sessions from the database.

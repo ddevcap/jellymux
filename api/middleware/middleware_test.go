@@ -12,9 +12,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/ddevcap/jellyfin-proxy/api/middleware"
-	"github.com/ddevcap/jellyfin-proxy/config"
-	"github.com/ddevcap/jellyfin-proxy/ent"
+	"github.com/ddevcap/jellymux/api/middleware"
+	"github.com/ddevcap/jellymux/config"
+	"github.com/ddevcap/jellymux/ent"
 )
 
 // newCtx builds a minimal gin.Context from a hand-crafted *http.Request.
@@ -502,4 +502,3 @@ var _ = Describe("RequestLogger middleware", func() {
 		Expect(w.Code).To(Equal(http.StatusOK))
 	})
 })
-

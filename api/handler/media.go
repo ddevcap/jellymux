@@ -10,12 +10,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ddevcap/jellyfin-proxy/api/middleware"
-	"github.com/ddevcap/jellyfin-proxy/backend"
-	"github.com/ddevcap/jellyfin-proxy/config"
-	"github.com/ddevcap/jellyfin-proxy/ent"
-	entsession "github.com/ddevcap/jellyfin-proxy/ent/session"
-	"github.com/ddevcap/jellyfin-proxy/idtrans"
+	"github.com/ddevcap/jellymux/api/middleware"
+	"github.com/ddevcap/jellymux/backend"
+	"github.com/ddevcap/jellymux/config"
+	"github.com/ddevcap/jellymux/ent"
+	entsession "github.com/ddevcap/jellymux/ent/session"
+	"github.com/ddevcap/jellymux/idtrans"
 	"github.com/gin-gonic/gin"
 	"github.com/jellydator/ttlcache/v3"
 )

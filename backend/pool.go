@@ -10,11 +10,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/ddevcap/jellyfin-proxy/config"
-	"github.com/ddevcap/jellyfin-proxy/ent"
-	entbackend "github.com/ddevcap/jellyfin-proxy/ent/backend"
-	entbackenduser "github.com/ddevcap/jellyfin-proxy/ent/backenduser"
-	entuser "github.com/ddevcap/jellyfin-proxy/ent/user"
+	"github.com/ddevcap/jellymux/config"
+	"github.com/ddevcap/jellymux/ent"
+	entbackend "github.com/ddevcap/jellymux/ent/backend"
+	entbackenduser "github.com/ddevcap/jellymux/ent/backenduser"
+	entuser "github.com/ddevcap/jellymux/ent/user"
 )
 
 // Pool manages HTTP connections to all registered backend Jellyfin servers.

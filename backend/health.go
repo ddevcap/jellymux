@@ -9,7 +9,7 @@ import (
 	"sync"
 	"time"
 
-	entbackend "github.com/ddevcap/jellyfin-proxy/ent/backend"
+	entbackend "github.com/ddevcap/jellymux/ent/backend"
 )
 
 const (

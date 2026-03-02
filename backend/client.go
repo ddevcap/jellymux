@@ -11,8 +11,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/ddevcap/jellyfin-proxy/ent"
-	"github.com/ddevcap/jellyfin-proxy/idtrans"
+	"github.com/ddevcap/jellymux/ent"
+	"github.com/ddevcap/jellymux/idtrans"
 )
 
 // ServerClient is a ready-to-use HTTP client for one backend Jellyfin server
