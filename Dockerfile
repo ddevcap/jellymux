@@ -4,7 +4,7 @@
 # Source: https://github.com/ddevcap/jellymux-web (GPL-2.0)
 FROM alpine:3.21 AS web-stage
 
-ARG JELLYFIN_WEB_VERSION=10.11.6-jellymux.3
+ARG JELLYFIN_WEB_VERSION=10.11.6-jellymux.1
 
 ADD https://github.com/ddevcap/jellymux-web/releases/download/v${JELLYFIN_WEB_VERSION}/dist.tar.gz /tmp/dist.tar.gz
 RUN mkdir -p /srv/jellymux-web \

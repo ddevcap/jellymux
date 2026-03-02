@@ -76,7 +76,6 @@ var _ = Describe("SessionCleaner", func() {
 
 		sc := api.NewSessionCleaner(db, cfg)
 		sc.Cleanup(ctx)
-
 		count, err := db.Session.Query().Count(ctx)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(count).To(Equal(1))

@@ -184,7 +184,6 @@ var _ = Describe("Context helpers", func() {
 			dst := handler.ForwardQuery(src, "buid")
 			Expect(dst.Get("Recursive")).To(Equal("true"))
 		})
-
 		It("omits UserId when backendUserID is empty", func() {
 			src := url.Values{"UserId": {"proxy-id"}}
 			dst := handler.ForwardQuery(src, "")

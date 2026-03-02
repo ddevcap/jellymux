@@ -495,7 +495,6 @@ var _ = Describe("RequestLogger middleware", func() {
 		r.GET("/test", func(c *gin.Context) {
 			c.Status(http.StatusOK)
 		})
-
 		req, _ := http.NewRequest(http.MethodGet, "/test?foo=bar", nil)
 		w := httptest.NewRecorder()
 		r.ServeHTTP(w, req)
